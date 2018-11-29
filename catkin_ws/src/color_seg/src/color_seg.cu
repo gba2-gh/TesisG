@@ -7,30 +7,83 @@
 
 //KERNEL PARA CONVERSIÓN A HSV
 __global__
-void rgba_to_greyscale(const uchar4* const rgbaImage,
-                       uchar4* const greyImage,
+void rgba_2_hsv(const uchar4* const rgbaImage,
+                       uchar4* const hsvImage,
                        int numRows, int numCols)
 { 
 
   int y = threadIdx.y+ blockIdx.y* blockDim.y;   //globalIdx = (blockIdx * threadsPerBlock) + threadId
 
   int x = threadIdx.x+ blockIdx.x* blockDim.x;
-//printf("y= %d\n ",y);
-// printf("x= %d\n ",x);
- // printf("threadIdx.y = %d\n",threadIdx.y);
- // printf("blockDim.y = %d\n",blockDim.y);
- // printf("blockIdx.y = %d\n",blockIdx.y);
- 
-if (y < numCols && x < numRows) {
+float rgbaMAX=0;
+float rgbaMIN=0;
+
+//prevents accessing out of im
+if (y < numCols && x < numRows) 
+  {
   	int index = numRows*y +x;    ///numCols
-/// printf("index = %d\n",index);
-  uchar4 color = rgbaImage[index];
-// printf("color.x = %u\n",(unsigned char)(color.x)); 
-  unsigned char grey =  (unsigned char)(0.299f*color.x+ 0.587f*color.y + 0.114f*color.z);
-  greyImage[index].x = grey ;
- greyImage[index].y =  grey;
- greyImage[index].z =  grey;
+        /// printf("index = %d\n",index);}
+
+//CONVERT 8 B TO FLOAT 
+float R=rgbaImage[index].x*(1.0/255.0), G=rgbaImage[index].y*(1.0/255.0), B=rgbaImage[index].z*(1.0/255.0);
+
+//FIND MAX AND MIN VALUES FOR THE RGB STRUCT
+if(B > G){
+	if(B > R){
+	     rgbaMAX= B; //B CHANNEL MAX VAlUE
+	    
+	       if(G > R){
+	        	rgbaMIN= R;}
+	       else{rgbaMIN= G;}
+	}else{rgbaMAX=R;
+		rgbaMIN=G;}
+  }else{
+	if(G > R){
+	      rgbaMAX= G;
+	      if(B > R){
+	      rgbaMIN= R;}
+	      else{rgbaMIN= B;}
+	}else{rgbaMAX= R;
+	      rgbaMIN= B;}
   }
+
+// printf("rgbaMAX= %f\n",rgbaMAX);
+// printf("rgbaMIN= %f\n",rgbaMIN);
+
+unsigned char V = rgbaMAX*(255); /// V=MAX(R,G,B)
+unsigned char S=0;
+unsigned char H=0;
+float Sp=0, Hp=0;
+//Saturation
+if(V != 0)
+ {Sp=((V-rgbaMIN)/V)*255;  ///  S= (V-min(R,G,B)) / V }
+S=Sp*(255);
+
+//hue ineficiente
+if(V==R*255){ Hp=(60*(G-B))/(V-rgbaMIN);}
+if(V==G*255){ Hp=(120+60*(B-R))/(V-rgbaMIN);}
+if(V==B*255){ Hp=(240+60*(R-G))/(V-rgbaMIN);}
+
+if(Hp<0){Hp=Hp+360;}
+H=Hp*(0.5);
+
+hsvImage[index].x= H;
+hsvImage[index].y= S;
+hsvImage[index].z= V;
+//printf("V=%u", V);
+//printf("S=%u", S);
+//printf("%u\n",H);
+
+
+//     //grey consersion
+//   uchar4 color = rgbaImage[index];
+// // printf("color.x = %u\n",(unsigned char)(color.x)); 
+//   unsigned char grey =  (unsigned char)(0.299f*color.x+ 0.587f*color.y + 0.114f*color.z);
+//   greyImage[index].x = grey ;
+//  greyImage[index].y =  grey;
+//  greyImage[index].z =  grey;
+  
+}}
 }
 
 
@@ -51,7 +104,7 @@ void rgba2hsv(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
 
 ///////////////
 
-   rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows, numCols);
+   rgba_2_hsv<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows, numCols);
   cudaDeviceSynchronize(); 
   checkCudaErrors(cudaGetLastError());
 }

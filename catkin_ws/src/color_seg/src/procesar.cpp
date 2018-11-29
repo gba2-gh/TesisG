@@ -20,7 +20,7 @@ size_t numRows() { return imageRGBA.rows; }
 size_t numCols() { return imageRGBA.cols; }
 
 void preProcess(uchar4 **inputImage, uchar4 **greyImage,
-                uchar4 **d_rgbaImage, uchar4**d_greyImage,
+                uchar4 **d_rgbaImage, uchar4 **d_greyImage,
                 cv::Mat frame) {
   //make sure the context initializes ok
   checkCudaErrors(cudaFree(0));

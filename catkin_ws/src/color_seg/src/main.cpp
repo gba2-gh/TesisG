@@ -24,9 +24,9 @@ void rgba2hsv(const uchar4 * const h_rgbaImage,
 using namespace cv;
 const int max_value_H = 360/2;
 const int max_value = 255;
-const String window_detection_name = "captura hsv";
+const String window_detection_name = "HSV OPenCV";
 const String window_dil = "Video dilatadao";
-const String window_hsv = "Captura hsv cuda";
+const String window_hsv = "HSV Paralell";
 
 //trackbar para modificarvalores HSV
 int low_H = 0, low_S = 0, low_V = 0;
@@ -65,8 +65,9 @@ int main(int argc, char **argv) {
 
 VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
   
- uchar4        *h_rgbaImage, *d_rgbaImage, *h_hsvImage, *d_hsvImage;
-  unsigned char *h_greyImage, *d_greyImage;
+ uchar4        *h_rgbaImage, *d_rgbaImage;
+ uchar4        *h_hsvImage, *d_hsvImage;
+  
 
 
     namedWindow(window_detection_name);
@@ -131,7 +132,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
   //Copiar imagen de dispositivo a host
  size_t numPixels = numRows()*numCols();
- checkCudaErrors(cudaMemcpy(h_hsvImage, d_hsvImage, sizeof(uchar4) * numPixels, cudaMemcpyDeviceToHost));
+ checkCudaErrors(cudaMemcpy(h_hsvImage, d_hsvImage, sizeof(unsigned char) * numPixels*4, cudaMemcpyDeviceToHost));
 
   //Desplegar imagen de salida
 
@@ -139,14 +140,14 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  cv::Mat imgRGBA ;
  cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
- imshow(window_hsv, imgRGBA);
+  imshow(window_hsv, img);
 
   cleanup();    //procesar.cpp
 
   //Mostrar imagenes procesadas por OpenCV
-        imshow(window_detection_name, frame_HSV);
+   imshow(window_detection_name, frame_HSV);
 	//	imshow(window_ero, frame_eroded);
-    	imshow(window_dil, frame_dilated);
+	// 	imshow(window_dil, frame_dilated);
         char key = (char) waitKey(30);
         if (key == 'q' || key == 27)
         {
