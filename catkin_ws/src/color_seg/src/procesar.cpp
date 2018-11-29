@@ -29,7 +29,7 @@ void preProcess(uchar4 **inputImage, uchar4 **greyImage,
   cv::cvtColor(frame, imageRGBA, CV_BGR2RGBA);
 
   //allocate memory for the output
-  imageGrey.create(frame.rows, frame.cols, CV_8UC1);
+  imageGrey.create(frame.rows, frame.cols, CV_8UC4);
 
   //verify that image is continous
   if (!imageRGBA.isContinuous() || !imageGrey.isContinuous()) {
@@ -53,19 +53,7 @@ void preProcess(uchar4 **inputImage, uchar4 **greyImage,
   d_greyImage__ = *d_greyImage;
 }
 
-void postProcess(const std::string& output_file, uchar4 * data_ptr) {
-  cv::Mat output(numRows(), numCols(), CV_8UC1, (void*)data_ptr);
 
-  //output the image
-  // namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
-
-
-  imshow( "Display window", output );                   
-
-    //waitKey(0); 
- // cv::imwrite(output_file.c_str(), output);
-  //cv::imwrite("/home/gibran/Documents/gray.bmp", output);
-}
 
 void cleanup()
 {

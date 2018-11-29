@@ -26,6 +26,7 @@ const int max_value_H = 360/2;
 const int max_value = 255;
 const String window_detection_name = "captura hsv";
 const String window_dil = "Video dilatadao";
+const String window_hsv = "Captura hsv cuda";
 
 //trackbar para modificarvalores HSV
 int low_H = 0, low_S = 0, low_V = 0;
@@ -71,6 +72,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
     namedWindow(window_detection_name);
     //    namedWindow(window_ero);
     namedWindow(window_dil);
+    namedWindow(window_hsv);
     // Trackbar  thresholds HSV
     createTrackbar("H", window_detection_name, &low_H, max_value_H, on_low_H_thresh_trackbar);
     createTrackbar("S", window_detection_name, &low_S, max_value, on_low_S_thresh_trackbar);
@@ -129,10 +131,15 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
   //Copiar imagen de dispositivo a host
  size_t numPixels = numRows()*numCols();
- checkCudaErrors(cudaMemcpy(h_hsvImage, d_hsvImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost));
+ checkCudaErrors(cudaMemcpy(h_hsvImage, d_hsvImage, sizeof(uchar4) * numPixels, cudaMemcpyDeviceToHost));
 
   //Desplegar imagen de salida
-  postProcess(output_file, h_hsvImage);    //procesar.cpp
+
+ cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC4,(void*)h_hsvImage);
+ cv::Mat imgRGBA ;
+ cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
+
+ imshow(window_hsv, imgRGBA);
 
   cleanup();    //procesar.cpp
 
