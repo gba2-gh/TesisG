@@ -1,2 +1,2 @@
 # TesisG
-Tesis
+Tesis de Gibrán
