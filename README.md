@@ -1,2 +1,2 @@
 # TesisG
-Tesis de Gibrán
+Node for color based seg: rosrun color_seg color_seg_node
