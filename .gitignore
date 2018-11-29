@@ -1,0 +1,37 @@
+*~
+*.pyc
+*.py~
+*.launch~
+*.cpp~
+*.h~
+*.srv~
+*.msg~
+*.xml~
+*.txt~
+*.swp
+*.swo
+*.swn
+catkin_ws/devel/
+catkin_ws/build/
+catkin_ws/src/CMakeLists.txt
+
+# Ignore generated docs
+*.dox
+*.wikidoc
+
+# eclipse stuff
+.project
+.cproject
+
+# qcreator stuff
+CMakeLists.txt.user
+
+catkin_ws/src/interoperation/bbros_bridge/srv/_*.py
+*.pcd
+*.pyc
+qtcreator-*
+*.user
+
+catkin_ws/src/src\.kdev4
+
+catkin_ws/src/\.kdev4/
