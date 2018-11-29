@@ -20,5 +20,4 @@ void check(T err, const char* const func, const char* const file, const int line
   }
 }
 
-
 #endif

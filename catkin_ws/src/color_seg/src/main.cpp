@@ -1,4 +1,4 @@
-//Udacity HW1 Solution
+//Programa para realizar una segmentación por color con CUDA C++
 
 #include <iostream>
 #include "timer.h"

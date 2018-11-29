@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(red_eye_correction)
+project(color_seg)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
 # add_definitions(-std=c++11)
@@ -15,21 +15,18 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
-find_package(CUDA REQUIRED)
 find_package(OpenCV REQUIRED)
-
-SET(CUDA_NVCC_FLAGS "-arch=sm_30" CACHE STRING "nvcc flags" FORCE) ##sm;gpu arch
-SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
-SET(LIB_TYPE STATIC) 
-CUDA_ADD_LIBRARY(libREDEYE ${LIB_TYPE} src/student_func.cu)  ##cuda-c source file
-CUDA_ADD_LIBRARY(libREDEYETWO ${LIB_TYPE} src/HW4.cu) 
-
+find_package(CUDA REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 # catkin_python_setup()
+SET(CUDA_NVCC_FLAGS "-arch=sm_30" CACHE STRING "nvcc flags" FORCE) ##sm;gpu arch
+SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
+SET(LIB_TYPE STATIC) 
+CUDA_ADD_LIBRARY(colorsegLIB ${LIB_TYPE} src/color_seg.cu)  ##cuda-c source file
+
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -39,7 +36,7 @@ CUDA_ADD_LIBRARY(libREDEYETWO ${LIB_TYPE} src/HW4.cu)
 ## package, follow these steps:
 ## * Let MSG_DEP_SET be the set of packages whose message types you use in
 ##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-           ## * In the file package.xml:
+## * In the file package.xml:
 ##   * add a build_depend tag for "message_generation"
 ##   * add a build_depend and a run_depend tag for each package in MSG_DEP_SET
 ##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
@@ -113,7 +110,7 @@ CUDA_ADD_LIBRARY(libREDEYETWO ${LIB_TYPE} src/HW4.cu)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES red_eye_correction
+#  LIBRARIES color_seg
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
@@ -130,28 +127,20 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
+add_executable(color_seg_node src/main.cpp)
+add_dependencies(color_seg_node colorsegLIB)
 
 
-
-add_executable(red_eye_correction_node src/main.cpp)
-add_dependencies(red_eye_correction_node  libREDEYE)
-add_dependencies(red_eye_correction_node  libREDEYETWO)
-
-
-TARGET_LINK_LIBRARIES(red_eye_correction_node 
+TARGET_LINK_LIBRARIES(color_seg_node
 ${catkin_LIBRARIES}
 ${PCL_LIBRARIES}
 ${OpenCV_LIBS}
-libREDEYE
-libREDEYETWO
+colorsegLIB
 
 )
-
-
-
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/red_eye_correction.cpp
+#   src/${PROJECT_NAME}/color_seg.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -162,7 +151,7 @@ libREDEYETWO
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/red_eye_correction_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/color_seg_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -219,7 +208,7 @@ libREDEYETWO
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_red_eye_correction.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_color_seg.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
