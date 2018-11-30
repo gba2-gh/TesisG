@@ -146,8 +146,8 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
   //Mostrar imagenes procesadas por OpenCV
      imshow(window_detection_name, frame_HSV);
-	//	imshow(window_ero, frame_eroded);
-	// 	imshow(window_dil, frame_dilated);
+     //	imshow(window_ero, frame);
+	 	imshow(window_dil, frame);
         char key = (char) waitKey(30);
         if (key == 'q' || key == 27)
         {

@@ -25,7 +25,7 @@ if (y < numCols && x < numRows)
         /// printf("index = %d\n",index);}
 
 //CONVERT 8 B TO FLOAT 
-float B=rgbaImage[index].x*(1.0/255.0), G=rgbaImage[index].y*(1.0/255.0), R=rgbaImage[index].z*(1.0/255.0);
+float R=rgbaImage[index].x*(1.0/255.0), G=rgbaImage[index].y*(1.0/255.0), B=rgbaImage[index].z*(1.0/255.0);
 
 //FIND MAX AND MIN VALUES FOR THE RGB STRUCT
 
@@ -56,22 +56,21 @@ unsigned char V = rgbaMAX*(255); /// V=MAX(R,G,B)
 unsigned char S=0;
 unsigned char H=0;
 float Sp=0, Hp=0;
+
 //Saturation
 if(V != 0)
   {Sp=((rgbaMAX-rgbaMIN)/rgbaMAX); } ///  S= (V-min(R,G,B)) / V }
 S=Sp*(255);
 
 //hue ineficiente
- if(V==R*255){
+if(V==R*255){
    if(G>=B){
      Hp=(60*(G-B))/(rgbaMAX-rgbaMIN);}
-   else{
-     
-Hp=(60*(G-B))/(rgbaMAX-rgbaMIN) +360;
-   }
-   }
- if(V==G*255){ Hp=(120+60*(B-R))/(rgbaMAX-rgbaMIN);}
-if(V==B*255){ Hp=(240+60*(R-G))/(rgbaMAX-rgbaMIN);}
+ else{    
+	Hp=((60*(G-B))/(rgbaMAX-rgbaMIN) )+360;}
+}
+if(V==G*255){Hp=((60*(B-R))/(rgbaMAX-rgbaMIN))+120;}
+if(V==B*255 && V!=G*255 && V!=R*255){ Hp=((60*(R-G))/(rgbaMAX-rgbaMIN))+240;}
 H=Hp*(0.5);
 
 if(H==0){H=1;}
@@ -101,11 +100,7 @@ void rgba2hsv(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
                             uchar4 * const d_greyImage, size_t numRows, size_t numCols)
 {
   
-
   int   blockWidth = 32;   // (dimensionX / gridbloqueenX) = threadsporbloqueenX
-  
-   //  printf("numRows = %d\n",numRows);
-   // printf("numCols = %d\n",numCols);
 
     const dim3 blockSize(blockWidth, blockWidth, 1);
    int   blocksX = (numRows/blockWidth)+1;       // +1 por redondeo ??
