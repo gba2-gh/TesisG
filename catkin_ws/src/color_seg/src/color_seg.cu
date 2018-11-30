@@ -18,16 +18,17 @@ void rgba_2_hsv(const uchar4* const rgbaImage,
 float rgbaMAX=0;
 float rgbaMIN=0;
 
-//prevents accessing out of im
+//prevents accessing out of bounds
 if (y < numCols && x < numRows) 
   {
   	int index = numRows*y +x;    ///numCols
         /// printf("index = %d\n",index);}
 
 //CONVERT 8 B TO FLOAT 
-float R=rgbaImage[index].x*(1.0/255.0), G=rgbaImage[index].y*(1.0/255.0), B=rgbaImage[index].z*(1.0/255.0);
+float B=rgbaImage[index].x*(1.0/255.0), G=rgbaImage[index].y*(1.0/255.0), R=rgbaImage[index].z*(1.0/255.0);
 
 //FIND MAX AND MIN VALUES FOR THE RGB STRUCT
+
 if(B > G){
 	if(B > R){
 	     rgbaMAX= B; //B CHANNEL MAX VAlUE
@@ -47,6 +48,7 @@ if(B > G){
 	      rgbaMIN= B;}
   }
 
+
 // printf("rgbaMAX= %f\n",rgbaMAX);
 // printf("rgbaMIN= %f\n",rgbaMIN);
 
@@ -56,16 +58,24 @@ unsigned char H=0;
 float Sp=0, Hp=0;
 //Saturation
 if(V != 0)
- {Sp=((V-rgbaMIN)/V)*255;  ///  S= (V-min(R,G,B)) / V }
+  {Sp=((rgbaMAX-rgbaMIN)/rgbaMAX); } ///  S= (V-min(R,G,B)) / V }
 S=Sp*(255);
 
 //hue ineficiente
-if(V==R*255){ Hp=(60*(G-B))/(V-rgbaMIN);}
-if(V==G*255){ Hp=(120+60*(B-R))/(V-rgbaMIN);}
-if(V==B*255){ Hp=(240+60*(R-G))/(V-rgbaMIN);}
-
-if(Hp<0){Hp=Hp+360;}
+ if(V==R*255){
+   if(G>=B){
+     Hp=(60*(G-B))/(rgbaMAX-rgbaMIN);}
+   else{
+     
+Hp=(60*(G-B))/(rgbaMAX-rgbaMIN) +360;
+   }
+   }
+ if(V==G*255){ Hp=(120+60*(B-R))/(rgbaMAX-rgbaMIN);}
+if(V==B*255){ Hp=(240+60*(R-G))/(rgbaMAX-rgbaMIN);}
 H=Hp*(0.5);
+
+if(H==0){H=1;}
+ 
 
 hsvImage[index].x= H;
 hsvImage[index].y= S;
@@ -83,7 +93,7 @@ hsvImage[index].z= V;
 //  greyImage[index].y =  grey;
 //  greyImage[index].z =  grey;
   
-}}
+}
 }
 
 
