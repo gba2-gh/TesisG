@@ -8,7 +8,7 @@
 //KERNEL PARA CONVERSIÓN A HSV
 __global__
 void rgba_2_hsv(const uchar4* const rgbaImage,
-                       uchar4* const hsvImage,
+                       uchar3* const hsvImage,
                        int numRows, int numCols)
 { 
 
@@ -22,7 +22,7 @@ float rgbaMIN=0;
 if (y < numCols && x < numRows) 
   {
   	int index = numRows*y +x;    ///numCols
-        /// printf("index = %d\n",index);}
+        /// printf("index = %d\n",index);
 
 //CONVERT 8 B TO FLOAT 
 float R=rgbaImage[index].x*(1.0/255.0), G=rgbaImage[index].y*(1.0/255.0), B=rgbaImage[index].z*(1.0/255.0);
@@ -84,7 +84,7 @@ hsvImage[index].z= V;
 //printf("%u\n",H);
 
 
-//     //grey consersion
+//     //grey conversion
 //   uchar4 color = rgbaImage[index];
 // // printf("color.x = %u\n",(unsigned char)(color.x)); 
 //   unsigned char grey =  (unsigned char)(0.299f*color.x+ 0.587f*color.y + 0.114f*color.z);
@@ -96,8 +96,49 @@ hsvImage[index].z= V;
 }
 
 
+__global__ void threshold_kernel(const uchar3* hsvImage,
+ 	     	  	    	  uchar3* thresImage,
+ 				  int numRows, int numCols){
+
+ int Hmin=100, Smin=100, Vmin=110;
+//int Hmin=0, Smin=0, Vmin=0;
+int Hmax=170, Smax=250, Vmax=250;
+
+  int y = threadIdx.y+ blockIdx.y* blockDim.y;   //globalIdx = (blockIdx * threadsPerBlock) + threadId
+
+   int x = threadIdx.x+ blockIdx.x* blockDim.x;
+
+// printf("hola desde el kernel \n");
+
+if (y < numCols && x < numRows) 
+  {
+   	int index = numRows*y +x;
+
+
+unsigned char H=hsvImage[index].x;
+unsigned char S=hsvImage[index].y;
+unsigned char V=hsvImage[index].z;
+
+// printf("hola desde el kernel \n");
+ 
+if(H>Hmin && H<Hmax && S>Smin && S<Smax && V>Vmin && V<Vmax){
+  thresImage[index].x=255; thresImage[index].y=255; thresImage[index].z=255;
+
+ }else{thresImage[index].x=0; thresImage[index].y=0; thresImage[index].z=0; }
+
+// if(){
+//   thresImage[index].y=255;
+//  }else{thresImage[index].y=0;}
+
+// if(V>Vmin && V<Vmax){
+//   thresImage[index].z=255;
+//  }else{thresImage[index].z=0;}
+
+}
+ }
+
 void rgba2hsv(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
-                            uchar4 * const d_greyImage, size_t numRows, size_t numCols)
+                            uchar3 * const d_hsvImage, uchar3 * d_thresImage, size_t numRows, size_t numCols)
 {
   
   int   blockWidth = 32;   // (dimensionX / gridbloqueenX) = threadsporbloqueenX
@@ -109,11 +150,11 @@ void rgba2hsv(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
 
 ///////////////
 
-   rgba_2_hsv<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows, numCols);
-  cudaDeviceSynchronize(); 
+  rgba_2_hsv<<<gridSize, blockSize>>>(d_rgbaImage, d_hsvImage, numRows, numCols); 
+  cudaDeviceSynchronize();
+threshold_kernel<<<gridSize, blockSize>>>(d_hsvImage, d_thresImage, numRows, numCols); 
+  cudaDeviceSynchronize();
   checkCudaErrors(cudaGetLastError());
 }
-
-
 
 

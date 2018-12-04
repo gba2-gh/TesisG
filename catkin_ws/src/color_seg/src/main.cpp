@@ -17,9 +17,9 @@
 //color_seg.cu
 void rgba2hsv(const uchar4 * const h_rgbaImage, 
                             uchar4 * const d_rgbaImage,
-                            uchar4 * const d_greyImage, 
+                            uchar3 * const d_hsvImage,
+	                    uchar3 * const d_thresImage,
                             size_t numRows, size_t numCols);
-
 
 using namespace cv;
 const int max_value_H = 360/2;
@@ -27,7 +27,7 @@ const int max_value = 255;
 const String window_detection_name = "HSV OPenCV";
 const String window_dil = "Video dilatadao";
 const String window_hsv = "HSV Paralell";
-
+const String window_thres = "Threshold parallel";
 //trackbar para modificarvalores HSV
 int low_H = 0, low_S = 0, low_V = 0;
 int high_H = max_value_H, high_S = max_value, high_V = max_value;
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
   
  uchar4        *h_rgbaImage, *d_rgbaImage;
- uchar4        *h_hsvImage, *d_hsvImage;
+ uchar3        *h_hsvImage, *d_hsvImage, *h_thresImage, *d_thresImage;
   
 
 
@@ -74,6 +74,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
     //    namedWindow(window_ero);
     namedWindow(window_dil);
     namedWindow(window_hsv);
+    namedWindow(window_thres);
     // Trackbar  thresholds HSV
     createTrackbar("H", window_detection_name, &low_H, max_value_H, on_low_H_thresh_trackbar);
     createTrackbar("S", window_detection_name, &low_S, max_value, on_low_S_thresh_trackbar);
@@ -94,9 +95,9 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
         }
         // COnvertir BGR a HSV con opencv
         cvtColor(frame, frame_HSV, COLOR_BGR2HSV);
-        // Tresholding a imagen HSV con opencv
+        // Thresholding a imagen HSV con opencv //31,94,107
         // inRange(frame_HSV, Scalar(low_H, low_S, low_V), Scalar(170, 250, 250), frame_threshold);
-	inRange(frame_HSV, Scalar(31, 94, 107), Scalar(170, 250, 250), frame_threshold);
+	inRange(frame_HSV, Scalar(100, 120, 115), Scalar(170, 250, 250), frame_threshold);
 
 	//obtención del numero de fIlas y columnas del cuadro de video
 	size_t rows= frame_HSV.rows;
@@ -111,7 +112,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 	dilate(frame_eroded, frame_dilated, kernel);
   
   //cargar imagen y entregar apuntadores input y output
-	preProcess(&h_rgbaImage, &h_hsvImage, &d_rgbaImage, &d_hsvImage, frame); //procesar.cpp
+	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage,  &d_rgbaImage, &d_hsvImage, &d_thresImage, frame); //procesar.cpp
 
 	//iniciar timer
   GpuTimer timer;
@@ -119,7 +120,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
   
   //definida en color_seg.cu
   //MODIFICAR KERNEL PARA HSV, DILATACIÓN Y EROSIÓN
-  rgba2hsv(h_rgbaImage, d_rgbaImage, d_hsvImage, numRows(), numCols());
+  rgba2hsv(h_rgbaImage, d_rgbaImage, d_hsvImage, d_thresImage, numRows(), numCols());
   timer.Stop();
   cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
 
@@ -132,22 +133,26 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
   //Copiar imagen de dispositivo a host
  size_t numPixels = numRows()*numCols();
- checkCudaErrors(cudaMemcpy(h_hsvImage, d_hsvImage, sizeof(unsigned char) * numPixels*4, cudaMemcpyDeviceToHost));
+ checkCudaErrors(cudaMemcpy(h_hsvImage, d_hsvImage, sizeof(unsigned char) * numPixels*3, cudaMemcpyDeviceToHost));
+ checkCudaErrors(cudaMemcpy(h_thresImage, d_thresImage, sizeof(unsigned char) * numPixels*3, cudaMemcpyDeviceToHost));
+ 
 
   //Desplegar imagen de salida
 
- cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC4,(void*)h_hsvImage);
- cv::Mat imgRGBA ;
- cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
+ cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_hsvImage);
+  cv::Mat imgTH = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_thresImage);
+ //cv::Mat imgRGBA ;
+ // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
   imshow(window_hsv, img);
+  imshow(window_thres, imgTH);
 
   cleanup();    //procesar.cpp
 
   //Mostrar imagenes procesadas por OpenCV
      imshow(window_detection_name, frame_HSV);
-     //	imshow(window_ero, frame);
-	 	imshow(window_dil, frame);
+     	imshow(window_dil, frame_threshold);
+	//imshow(window_dil, frame);
         char key = (char) waitKey(30);
         if (key == 'q' || key == 27)
         {
