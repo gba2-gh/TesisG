@@ -14,11 +14,13 @@
 #include <cuda_runtime_api.h>
 #include <cuda.h>
 
-//color_seg.cu
-void rgba2hsv(const uchar4 * const h_rgbaImage, 
+//#include "color_seg.cu"
+void color_seg(const uchar4 * const h_rgbaImage, 
                             uchar4 * const d_rgbaImage,
                             uchar3 * const d_hsvImage,
-	                    uchar3 * const d_thresImage,
+	                    unsigned char * const d_thresImage,
+	       unsigned char * const d_erodedImage,
+	       unsigned char * const d_dilatedImage,
                             size_t numRows, size_t numCols);
 
 using namespace cv;
@@ -28,6 +30,8 @@ const String window_detection_name = "HSV OPenCV";
 const String window_dil = "Video dilatadao";
 const String window_hsv = "HSV Paralell";
 const String window_thres = "Threshold parallel";
+const String window_ero_p = "erode parallel";
+const String window_dil_p = "dilate parallel";
 //trackbar para modificarvalores HSV
 int low_H = 0, low_S = 0, low_V = 0;
 int high_H = max_value_H, high_S = max_value, high_V = max_value;
@@ -66,7 +70,9 @@ int main(int argc, char **argv) {
 VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
   
  uchar4        *h_rgbaImage, *d_rgbaImage;
- uchar3        *h_hsvImage, *d_hsvImage, *h_thresImage, *d_thresImage;
+ uchar3        *h_hsvImage, *d_hsvImage;
+ unsigned char *h_thresImage, *d_thresImage;
+ unsigned char *h_erodedImage, *d_erodedImage, *h_dilatedImage, *d_dilatedImage ;
   
 
 
@@ -96,8 +102,9 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
         // COnvertir BGR a HSV con opencv
         cvtColor(frame, frame_HSV, COLOR_BGR2HSV);
         // Thresholding a imagen HSV con opencv //31,94,107
-        // inRange(frame_HSV, Scalar(low_H, low_S, low_V), Scalar(170, 250, 250), frame_threshold);
-	inRange(frame_HSV, Scalar(100, 120, 115), Scalar(170, 250, 250), frame_threshold);
+	// inRange(frame_HSV, Scalar(low_H, low_S, low_V), Scalar(170, 250, 250), frame_threshold);
+	//inRange(frame_HSV, Scalar(100, 120, 115), Scalar(170, 250, 250), frame_threshold);
+       	inRange(frame_HSV, Scalar(90, 120, 100), Scalar(170, 250, 250), frame_threshold);
 
 	//obtención del numero de fIlas y columnas del cuadro de video
 	size_t rows= frame_HSV.rows;
@@ -106,13 +113,13 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 	//kernel elíptico para hacer la erosión
 	Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(5,5), Point(2,2));
 	//erosionar con opencv
-	erode(frame_threshold, frame_eroded, kernel);
+       	erode(frame_threshold, frame_eroded, kernel);
 
 	//dilatar con opencv
 	dilate(frame_eroded, frame_dilated, kernel);
   
   //cargar imagen y entregar apuntadores input y output
-	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage,  &d_rgbaImage, &d_hsvImage, &d_thresImage, frame); //procesar.cpp
+	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,  frame); //procesar.cpp
 
 	//iniciar timer
   GpuTimer timer;
@@ -120,7 +127,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
   
   //definida en color_seg.cu
   //MODIFICAR KERNEL PARA HSV, DILATACIÓN Y EROSIÓN
-  rgba2hsv(h_rgbaImage, d_rgbaImage, d_hsvImage, d_thresImage, numRows(), numCols());
+  color_seg(h_rgbaImage, d_rgbaImage, d_hsvImage, d_thresImage, d_erodedImage, d_dilatedImage,  numRows(), numCols());
   timer.Stop();
   cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
 
@@ -134,24 +141,30 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
   //Copiar imagen de dispositivo a host
  size_t numPixels = numRows()*numCols();
  checkCudaErrors(cudaMemcpy(h_hsvImage, d_hsvImage, sizeof(unsigned char) * numPixels*3, cudaMemcpyDeviceToHost));
- checkCudaErrors(cudaMemcpy(h_thresImage, d_thresImage, sizeof(unsigned char) * numPixels*3, cudaMemcpyDeviceToHost));
+ checkCudaErrors(cudaMemcpy(h_thresImage, d_thresImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost));
+ checkCudaErrors(cudaMemcpy(h_erodedImage, d_erodedImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(h_dilatedImage, d_dilatedImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost));
  
 
   //Desplegar imagen de salida
 
- cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_hsvImage);
-  cv::Mat imgTH = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_thresImage);
+  cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_hsvImage);
+  cv::Mat imgTH = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_thresImage);
+  cv::Mat imgEro = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_erodedImage);
+  cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_dilatedImage);
  //cv::Mat imgRGBA ;
  // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
-  imshow(window_hsv, img);
-  imshow(window_thres, imgTH);
+ // imshow(window_hsv, img);
+ // imshow(window_thres, imgTH);
+  imshow(window_ero_p, imgEro);
+  // imshow(window_dil_p, imgDil);
 
   cleanup();    //procesar.cpp
 
   //Mostrar imagenes procesadas por OpenCV
-     imshow(window_detection_name, frame_HSV);
-     	imshow(window_dil, frame_threshold);
+  // imshow(window_detection_name, frame_HSV);
+     //  imshow(window_dil, frame_dilated);
 	//imshow(window_dil, frame);
         char key = (char) waitKey(30);
         if (key == 'q' || key == 27)
