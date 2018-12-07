@@ -97,7 +97,7 @@ hsvImage[index].z= V;
 
 
 __global__ void threshold_kernel(const uchar3* hsvImage,
- 	     	  	    	  unsigned char* thresImage,
+ 	     	  	    	  unsigned char* thresImage,unsigned char* erodedImage,
  				  int numRows, int numCols){
 int Hmin=90, Smin=120, Vmin=100;
 // int Hmin=100, Smin=100, Vmin=110;
@@ -126,10 +126,12 @@ if(H>Hmin && H<Hmax && S>Smin && S<Smax && V>Vmin && V<Vmax){
 
  }else{thresImage[index]=0; }
 
-//printf("thre:%u \n", thresImage[index]);
 
 }
  }
+
+
+
 
 //KERNEL FOR EROSION
 
@@ -142,22 +144,27 @@ int y = blockIdx.y *blockDim.y + threadIdx.y;
 int menor=255;
 
 
-if( y >= numCols || x>= numRows){
-    return;}
+// if( x >= numCols || y>= numRows){
+//     return;}
 
-int index = numCols*y +x;   
+// int index = numCols*y +x;  
 
-//printf("thres:%u \n", thresImage[index]);
+
+if (y < numCols && x < numRows) 
+  {
+   	int index = numCols*x +y;
+
+
 
 //Kernel with 2D VON NEUMMAN stencil pattern
 
 int kernelSize = 4;
 
-//horizontal values for the operator
+//verticalhorizontal values for the operator
 //max and min to avoid accesing  out of bounds. a la posiciṕnen el grid se le suma una cantidad de posiciones igual al tamaño del kernel, después se desplaza por la mitad de su tamaño}
 for(int i=0; i<kernelSize;i++){
-	int offsetX= min(max(x + i -kernelSize/2,0), numCols -1);
-	int temp= thresImage[offsetX + y*numCols];
+	int offsetX= min(max(x + i -kernelSize/2,0), numRows -1);
+	int temp= thresImage[offsetX*numCols +y];
 	if(temp < menor){
 		 menor=temp;
 		 }
@@ -165,15 +172,19 @@ for(int i=0; i<kernelSize;i++){
 
 for(int i=0; i<kernelSize;i++){
 	int offsetY= min(max(y + i -kernelSize/2,0), numRows -1);
-	int temp= thresImage[x+ offsetY*numCols ];
+	int temp= thresImage[x*numCols + offsetY];
 	if(temp< menor){
 		 menor=temp;
 		 }
 }
 
+
 erodedImage[index]=menor;
-//printf("%i \n", menor);
+//thresImage[index]=;
+
 }
+}
+
 
 
 ///KERNEL DILATACIÓN
@@ -187,10 +198,10 @@ int mayor=0;
 //arr[3] = {};
 
 
-if( x >= numCols || y>= numRows){
+if( y >= numCols || x>= numRows){
     return;}
 
-int index = numCols*y +x;   
+int index = numCols*x +y;   
 
 //printf("thres:%u \n", thresImage[index]);
 
@@ -198,20 +209,20 @@ int index = numCols*y +x;
 
 int kernelSize = 4;
 
-//horizontal values for the operator
+//vertical values for the operator
 //max and min to avoid accesing  out of bounds. a la posiciṕnen el grid se le suma una cantidad de posiciones igual al tamaño del kernel, después se desplaza por la mitad de su tamaño}
 for(int i=0; i<kernelSize;i++){
-	int offsetX= min(max(x + i -kernelSize/2,0), numCols -1);
-	int temp= erodedImage[offsetX + y*numCols];
+	int offsetX= min(max(x + i -kernelSize/2,0), numRows -1);
+	int temp= erodedImage[offsetX*numCols + y];
 	if(temp > mayor){
 		 mayor=temp;
 		 }
 }
 
-//vertical values
+//horizontal values
 for(int i=0; i<kernelSize;i++){
-	int offsetY= min(max(y + i -kernelSize/2,0), numRows -1);
-	int temp= erodedImage[x+ offsetY*numCols ];
+	int offsetY= min(max(y + i -kernelSize/2,0), numCols -1);
+	int temp= erodedImage[x*numCols + offsetY ];
 	if(temp > mayor){
 		 mayor=temp;
 		 }
@@ -238,9 +249,9 @@ void color_seg(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
 
   rgba_2_hsv<<<gridSize, blockSize>>>(d_rgbaImage, d_hsvImage, numRows, numCols); 
   cudaDeviceSynchronize();
-  threshold_kernel<<<gridSize, blockSize>>>(d_hsvImage, d_thresImage, numRows, numCols);
+  threshold_kernel<<<gridSize, blockSize>>>(d_hsvImage, d_thresImage, d_erodedImage, numRows, numCols);
   cudaDeviceSynchronize();
-  erode_kernel<<<gridSize,blockSize>>>(d_thresImage, d_erodedImage, numRows, numCols);
+ erode_kernel<<<gridSize,blockSize>>>(d_thresImage, d_erodedImage, numRows, numCols);
   cudaDeviceSynchronize();
   dilate_kernel<<<gridSize,blockSize>>>(d_erodedImage, d_dilatedImage,numRows, numCols);
   

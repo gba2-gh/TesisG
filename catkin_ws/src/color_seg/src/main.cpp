@@ -26,7 +26,8 @@ void color_seg(const uchar4 * const h_rgbaImage,
 using namespace cv;
 const int max_value_H = 360/2;
 const int max_value = 255;
-const String window_detection_name = "HSV OPenCV";
+const String window_detection_name = "OPenCV";
+const String window_ero = "Video erosionado";
 const String window_dil = "Video dilatadao";
 const String window_hsv = "HSV Paralell";
 const String window_thres = "Threshold parallel";
@@ -77,10 +78,11 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
 
     namedWindow(window_detection_name);
-    //    namedWindow(window_ero);
+    namedWindow(window_ero);
     namedWindow(window_dil);
     namedWindow(window_hsv);
     namedWindow(window_thres);
+
     // Trackbar  thresholds HSV
     createTrackbar("H", window_detection_name, &low_H, max_value_H, on_low_H_thresh_trackbar);
     createTrackbar("S", window_detection_name, &low_S, max_value, on_low_S_thresh_trackbar);
@@ -156,16 +158,16 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
  // imshow(window_hsv, img);
- // imshow(window_thres, imgTH);
+  imshow(window_thres, imgTH);
   imshow(window_ero_p, imgEro);
-  // imshow(window_dil_p, imgDil);
+  imshow(window_dil_p, imgDil);
 
   cleanup();    //procesar.cpp
 
   //Mostrar imagenes procesadas por OpenCV
-  // imshow(window_detection_name, frame_HSV);
-     //  imshow(window_dil, frame_dilated);
-	//imshow(window_dil, frame);
+   imshow(window_detection_name, frame_threshold);
+      imshow(window_dil, frame_dilated);
+	imshow(window_ero, frame_eroded);
         char key = (char) waitKey(30);
         if (key == 'q' || key == 27)
         {
