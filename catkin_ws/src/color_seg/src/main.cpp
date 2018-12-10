@@ -56,14 +56,6 @@ static void on_low_V_thresh_trackbar(int, void *)
 }
 
 
-//se conoce el número de filas y columnas del cuadro con las funciones numRows y numCols
-//size_t numRows() { return frame_HSV.rows; }
-//size_t numCols() { return frame_HSV.cols; }
-
-
-
-
-
 ////////////////////////////////////MAIN//////////////////////////////
 
 int main(int argc, char **argv) {
@@ -101,17 +93,19 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
         {
             break;
         }
-        // COnvertir BGR a HSV con opencv
+	
+	int64 t0 = cv::getTickCount();
+//
+// Segmentación por OpenCV
+//
+
+        // Convertir BGR a HSV con opencv
         cvtColor(frame, frame_HSV, COLOR_BGR2HSV);
         // Thresholding a imagen HSV con opencv //31,94,107
 	// inRange(frame_HSV, Scalar(low_H, low_S, low_V), Scalar(170, 250, 250), frame_threshold);
 	//inRange(frame_HSV, Scalar(100, 120, 115), Scalar(170, 250, 250), frame_threshold);
        	inRange(frame_HSV, Scalar(90, 120, 100), Scalar(170, 250, 250), frame_threshold);
 
-	//obtención del numero de fIlas y columnas del cuadro de video
-	size_t rows= frame_HSV.rows;
-	size_t cols= frame_HSV.cols;    
-	
 	//kernel elíptico para hacer la erosión
 	Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(5,5), Point(2,2));
 	//erosionar con opencv
@@ -119,19 +113,22 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
 	//dilatar con opencv
 	dilate(frame_eroded, frame_dilated, kernel);
-  
+
+	int64 t1 = cv::getTickCount();
+        double secs = ((t1-t0)/cv::getTickFrequency())*100;
+	printf("OPencvTime: %f ms\n",secs);
+	
   //cargar imagen y entregar apuntadores input y output
 	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,  frame); //procesar.cpp
 
-	//iniciar timer
-  GpuTimer timer;
+  GpuTimer timer;   	//iniciar timer
   timer.Start();
   
   //definida en color_seg.cu
   //MODIFICAR KERNEL PARA HSV, DILATACIÓN Y EROSIÓN
   color_seg(h_rgbaImage, d_rgbaImage, d_hsvImage, d_thresImage, d_erodedImage, d_dilatedImage,  numRows(), numCols());
-  timer.Stop();
-  cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
+  timer.Stop();        //deterner timer
+  cudaDeviceSynchronize(); 
 
   int err = printf("Your code ran in: %f msecs.\n", timer.Elapsed());
 
@@ -142,34 +139,36 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
   //Copiar imagen de dispositivo a host
  size_t numPixels = numRows()*numCols();
- checkCudaErrors(cudaMemcpy(h_hsvImage, d_hsvImage, sizeof(unsigned char) * numPixels*3, cudaMemcpyDeviceToHost));
- checkCudaErrors(cudaMemcpy(h_thresImage, d_thresImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost));
- checkCudaErrors(cudaMemcpy(h_erodedImage, d_erodedImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost));
-  checkCudaErrors(cudaMemcpy(h_dilatedImage, d_dilatedImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost));
+ cudaMemcpy(h_hsvImage, d_hsvImage, sizeof(unsigned char) * numPixels*3, cudaMemcpyDeviceToHost);
+ cudaMemcpy(h_thresImage, d_thresImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost);
+ cudaMemcpy(h_erodedImage, d_erodedImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost);
+ cudaMemcpy(h_dilatedImage, d_dilatedImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost);
  
 
   //Desplegar imagen de salida
 
-  cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_hsvImage);
+  cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_hsvImage);         //HSV Image
   cv::Mat imgTH = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_thresImage);
   cv::Mat imgEro = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_erodedImage);
-  cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_dilatedImage);
+    cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_dilatedImage);  //Dilated Image
  //cv::Mat imgRGBA ;
  // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
  // imshow(window_hsv, img);
-  imshow(window_thres, imgTH);
-  imshow(window_ero_p, imgEro);
-  imshow(window_dil_p, imgDil);
+     imshow(window_thres, imgTH);
+     imshow(window_ero_p, imgEro);
+     imshow(window_dil_p, imgDil);
 
   cleanup();    //procesar.cpp
 
   //Mostrar imagenes procesadas por OpenCV
-   imshow(window_detection_name, frame_threshold);
+  // imshow(window_detection_name, frame_threshold);
       imshow(window_dil, frame_dilated);
-	imshow(window_ero, frame_eroded);
+      //	imshow(window_ero, frame_eroded);
+
+      
         char key = (char) waitKey(30);
-        if (key == 'q' || key == 27)
+        if (key == 'q' || key == 27)   //stop at key press
         {
             break;
         }

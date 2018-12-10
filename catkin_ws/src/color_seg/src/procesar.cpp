@@ -52,7 +52,7 @@ void preProcess(uchar4 **inputImage, uchar3 **hsvImage, unsigned char **thresIma
     exit(1);
   }
 
-  
+  //allocate memory on host
   *inputImage = (uchar4 *)imageRGBA.ptr<unsigned char>(0);
   *hsvImage  = (uchar3 *)imageGrey.ptr<unsigned char>(0);
   *thresImage = (unsigned char*)imageThres.ptr<unsigned char>(0);
@@ -68,12 +68,12 @@ void preProcess(uchar4 **inputImage, uchar3 **hsvImage, unsigned char **thresIma
   checkCudaErrors(cudaMalloc(d_erodedImage, sizeof(unsigned char) * numPixels));
   checkCudaErrors(cudaMalloc(d_dilatedImage, sizeof(unsigned char) * numPixels));
   checkCudaErrors(cudaMemset(*d_hsvImage, 0, numPixels * sizeof(uchar3))); //make sure no memory is left laying around
-  checkCudaErrors(cudaMemset(*d_thresImage, 0, numPixels * sizeof(unsigned char))); //make sure no memory is left laying around
-  checkCudaErrors(cudaMemset(*d_erodedImage, 0, numPixels * sizeof(unsigned char))); //make sure no memory is left laying around
-  checkCudaErrors(cudaMemset(*d_dilatedImage, 0, numPixels * sizeof(unsigned char))); //make sure no memory is left laying around
+  cudaMemset(*d_thresImage, 0, numPixels * sizeof(unsigned char)); //make sure no memory is left laying around
+  cudaMemset(*d_erodedImage, 0, numPixels * sizeof(unsigned char)); //make sure no memory is left laying around
+  cudaMemset(*d_dilatedImage, 0, numPixels * sizeof(unsigned char)); //make sure no memory is left laying around
 
   //copy input array to the GPU
-  checkCudaErrors(cudaMemcpy(*d_rgbaImage, *inputImage, sizeof(uchar4) * numPixels, cudaMemcpyHostToDevice));
+  cudaMemcpy(*d_rgbaImage, *inputImage, sizeof(uchar4) * numPixels, cudaMemcpyHostToDevice);
 
   d_rgbaImage__ = *d_rgbaImage;
   d_hsvImage__ = *d_hsvImage;

@@ -143,19 +143,13 @@ int x = blockIdx.x * blockDim.x +  threadIdx.x;
 int y = blockIdx.y *blockDim.y + threadIdx.y;
 int menor=255;
 
+//extern __shared__ sh_thresImage[]
 
-// if( x >= numCols || y>= numRows){
-//     return;}
+ if( y >= numCols || x>= numRows){
+     return;}
 
-// int index = numCols*y +x;  
-
-
-if (y < numCols && x < numRows) 
-  {
-   	int index = numCols*x +y;
-
-
-
+    	int index = numCols*x +y;
+	
 //Kernel with 2D VON NEUMMAN stencil pattern
 
 int kernelSize = 4;
@@ -167,25 +161,20 @@ for(int i=0; i<kernelSize;i++){
 	int temp= thresImage[offsetX*numCols +y];
 	if(temp < menor){
 		 menor=temp;
-		 }
-}
+		 }}
 
 for(int i=0; i<kernelSize;i++){
-	int offsetY= min(max(y + i -kernelSize/2,0), numRows -1);
+	int offsetY= min(max(y + i -kernelSize/2,0), numCols -1);
 	int temp= thresImage[x*numCols + offsetY];
 	if(temp< menor){
 		 menor=temp;
-		 }
-}
-
+		 }}
 
 erodedImage[index]=menor;
 //thresImage[index]=;
 
+//}//end if
 }
-}
-
-
 
 ///KERNEL DILATACIÓN
 __global__ void dilate_kernel(unsigned char * erodedImage,
@@ -241,9 +230,10 @@ void color_seg(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
   int   blockWidth = 32;   // (dimensionX / gridbloqueenX) = threadsporbloqueenX
 
     const dim3 blockSize(blockWidth, blockWidth, 1);
-   int   blocksX = (numRows/blockWidth)+1;       // +1 por redondeo ??
-   int   blocksY = numCols/blockWidth +1; //TODO
-   const dim3 gridSize( blocksX, blocksY, 1);  //TODO
+   int   blocksX = (numRows/blockWidth)+1;       // +1 por truncamiento
+   int   blocksY = numCols/blockWidth +1; 
+   const dim3 gridSize( blocksX, blocksY, 1);  
+   int pixel=numRows*numCols;
 
 ///////////////
 
@@ -251,7 +241,7 @@ void color_seg(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
   cudaDeviceSynchronize();
   threshold_kernel<<<gridSize, blockSize>>>(d_hsvImage, d_thresImage, d_erodedImage, numRows, numCols);
   cudaDeviceSynchronize();
- erode_kernel<<<gridSize,blockSize>>>(d_thresImage, d_erodedImage, numRows, numCols);
+  erode_kernel<<<gridSize,blockSize>>>(d_thresImage, d_erodedImage, numRows, numCols);
   cudaDeviceSynchronize();
   dilate_kernel<<<gridSize,blockSize>>>(d_erodedImage, d_dilatedImage,numRows, numCols);
   
