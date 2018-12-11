@@ -97,7 +97,7 @@ hsvImage[index].z= V;
 
 
 __global__ void threshold_kernel(const uchar3* hsvImage,
- 	     	  	    	  unsigned char* thresImage,unsigned char* erodedImage,
+ 	     	  	    	  unsigned char* thresImage,
  				  int numRows, int numCols){
 int Hmin=90, Smin=120, Vmin=100;
 // int Hmin=100, Smin=100, Vmin=110;
@@ -136,7 +136,7 @@ if(H>Hmin && H<Hmax && S>Smin && S<Smax && V>Vmin && V<Vmax){
 //KERNEL FOR EROSION
 
 __global__ void erode_kernel(unsigned char * thresImage,
- 	     	  	    	  unsigned char* erodedImage,
+ 	     	  	    	  unsigned char* erodedImage, //unsigned char* dilatedImage,
  				  int numRows, int numCols){
 
 int x = blockIdx.x * blockDim.x +  threadIdx.x;
@@ -171,12 +171,54 @@ for(int i=0; i<kernelSize;i++){
 		 }}
 
 erodedImage[index]=menor;
-//thresImage[index]=;
 
-//}//end if
+// ////////////////////////////dilate
+// __syncthreads();
+
+// //x = blockIdx.x * blockDim.x +  threadIdx.x;
+// //y = blockIdx.y *blockDim.y + threadIdx.y;
+// int mayor=0;
+// //arr[3] = {};
+
+
+// if( y >= numCols || x>= numRows){
+//     return;}
+
+// index = numCols*x +y;   
+
+// //printf("thres:%u \n", thresImage[index]);
+
+// //Kernel with 2D VON NEUMMAN stencil pattern
+
+// //kernelSize = 4;
+
+// //vertical values for the operator
+// //max and min to avoid accesing  out of bounds. a la posiciṕnen el grid se le suma una cantidad de posiciones igual al tamaño del kernel, después se desplaza por la mitad de su tamaño}
+// for(int i=0; i<kernelSize;i++){
+// 	int offsetX= min(max(x + i -kernelSize/2,0), numRows -1);
+// 	int temp= erodedImage[offsetX*numCols + y];
+// 	if(temp > mayor){
+// 		 mayor=temp;
+// 		 }
+// }
+
+// //horizontal values
+// for(int i=0; i<kernelSize;i++){
+// 	int offsetY= min(max(y + i -kernelSize/2,0), numCols -1);
+// 	int temp= erodedImage[x*numCols + offsetY ];
+// 	if(temp > mayor){
+// 		 mayor=temp;
+// 		 }
+// }
+
+// dilatedImage[index]=mayor;
+
+
 }
 
-///KERNEL DILATACIÓN
+
+
+////KERNEL DILATACIÓN
 __global__ void dilate_kernel(unsigned char * erodedImage,
  	     	  	    	  unsigned char* dilatedImage,
  				  int numRows, int numCols){
@@ -226,8 +268,11 @@ void color_seg(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
 			    unsigned char * d_erodedImage, unsigned char * d_dilatedImage,
 			    size_t numRows, size_t numCols)
 {
+
+
+//exec speed greatly decreases with 16 & 8 th per block | best=8  (warp/4) 
   
-  int   blockWidth = 32;   // (dimensionX / gridbloqueenX) = threadsporbloqueenX
+  int   blockWidth = 8;   // (dimensionX / gridbloqueenX) = threadsporbloqueenX
 
     const dim3 blockSize(blockWidth, blockWidth, 1);
    int   blocksX = (numRows/blockWidth)+1;       // +1 por truncamiento
@@ -239,9 +284,9 @@ void color_seg(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
 
   rgba_2_hsv<<<gridSize, blockSize>>>(d_rgbaImage, d_hsvImage, numRows, numCols); 
   cudaDeviceSynchronize();
-  threshold_kernel<<<gridSize, blockSize>>>(d_hsvImage, d_thresImage, d_erodedImage, numRows, numCols);
+  threshold_kernel<<<gridSize, blockSize>>>(d_hsvImage, d_thresImage, numRows, numCols);
   cudaDeviceSynchronize();
-  erode_kernel<<<gridSize,blockSize>>>(d_thresImage, d_erodedImage, numRows, numCols);
+ erode_kernel<<<gridSize,blockSize>>>(d_thresImage, d_erodedImage, numRows, numCols);
   cudaDeviceSynchronize();
   dilate_kernel<<<gridSize,blockSize>>>(d_erodedImage, d_dilatedImage,numRows, numCols);
   

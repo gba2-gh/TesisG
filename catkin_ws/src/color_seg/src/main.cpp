@@ -85,8 +85,11 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
     
     std::string output_file;
 
-
+	//set video res
+	 // cap.set(CV_CAP_PROP_FRAME_WIDTH,10000);
+	 // cap.set(CV_CAP_PROP_FRAME_HEIGHT,10000);
       while (true) {
+
       //nuevo frame para la imagen de cámara
         cap >> frame;
         if(frame.empty())
@@ -95,6 +98,8 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
         }
 	
 	int64 t0 = cv::getTickCount();
+	GpuTimer timerop;
+	timerop.Start();
 //
 // Segmentación por OpenCV
 //
@@ -114,24 +119,36 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 	//dilatar con opencv
 	dilate(frame_eroded, frame_dilated, kernel);
 
-	int64 t1 = cv::getTickCount();
-        double secs = ((t1-t0)/cv::getTickFrequency())*100;
-	printf("OPencvTime: %f ms\n",secs);
+	timerop.Stop();
+        int err2 = printf("Your opencv code ran in: %f msecs.\n", timerop.Elapsed());
 	
+	int64 t1 = cv::getTickCount();
+        double secs = ((t1-t0)/cv::getTickFrequency())*1000;
+		printf("OPencvTime: %f ms\n",secs);
+
+       
+	// size_t aux=numRows();
+	// printf("aux=%zu \n",aux);
   //cargar imagen y entregar apuntadores input y output
 	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,  frame); //procesar.cpp
 
   GpuTimer timer;   	//iniciar timer
   timer.Start();
   
+   int64 tt0 = cv::getTickCount();
   //definida en color_seg.cu
   //MODIFICAR KERNEL PARA HSV, DILATACIÓN Y EROSIÓN
   color_seg(h_rgbaImage, d_rgbaImage, d_hsvImage, d_thresImage, d_erodedImage, d_dilatedImage,  numRows(), numCols());
   timer.Stop();        //deterner timer
   cudaDeviceSynchronize(); 
 
-  int err = printf("Your code ran in: %f msecs.\n", timer.Elapsed());
+        int64 tt1 = cv::getTickCount();
+        double secs2 = ((tt1-tt0)/cv::getTickFrequency())*1000;
+		printf("CudaTime: %f ms\n",secs2);
 
+  
+    int err = printf("Your cuda code ran in: %f msecs.\n\n", timer.Elapsed());
+  
   if (err < 0) {
     std::cerr << "Couldn't print timing information! STDOUT Closed!" << std::endl;
     exit(1);
@@ -150,13 +167,13 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
   cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_hsvImage);         //HSV Image
   cv::Mat imgTH = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_thresImage);
   cv::Mat imgEro = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_erodedImage);
-    cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_dilatedImage);  //Dilated Image
+  cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_dilatedImage);  //Dilated Image
  //cv::Mat imgRGBA ;
  // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
  // imshow(window_hsv, img);
-     imshow(window_thres, imgTH);
-     imshow(window_ero_p, imgEro);
+    // imshow(window_thres, imgTH);
+     //   imshow(window_ero_p, imgEro);
      imshow(window_dil_p, imgDil);
 
   cleanup();    //procesar.cpp
