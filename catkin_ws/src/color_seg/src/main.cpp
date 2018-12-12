@@ -80,15 +80,15 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
     createTrackbar("S", window_detection_name, &low_S, max_value, on_low_S_thresh_trackbar);
     createTrackbar("V", window_detection_name, &low_V, max_value, on_low_V_thresh_trackbar);
 
-    
     Mat frame, frame_HSV, frame_threshold, frame_eroded, frame_dilated, frameRGBA;
     
     std::string output_file;
 
 	//set video res
-	 // cap.set(CV_CAP_PROP_FRAME_WIDTH,10000);
-	 // cap.set(CV_CAP_PROP_FRAME_HEIGHT,10000);
+     cap.set(CV_CAP_PROP_FRAME_WIDTH,640);   // max:1280 ||  min:320   || def:640
+     cap.set(CV_CAP_PROP_FRAME_HEIGHT,480);   // max:720  ||  min: 180  || def:480
       while (true) {
+
 
       //nuevo frame para la imagen de cámara
         cap >> frame;
@@ -98,8 +98,8 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
         }
 	
 	int64 t0 = cv::getTickCount();
-	GpuTimer timerop;
-	timerop.Start();
+	// GpuTimer timerop;
+	// timerop.Start();
 //
 // Segmentación por OpenCV
 //
@@ -119,12 +119,12 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 	//dilatar con opencv
 	dilate(frame_eroded, frame_dilated, kernel);
 
-	timerop.Stop();
-        int err2 = printf("Your opencv code ran in: %f msecs.\n", timerop.Elapsed());
+	// timerop.Stop();
+        // int err2 = printf("Your opencv code ran in: %f msecs.\n", timerop.Elapsed());
 	
 	int64 t1 = cv::getTickCount();
         double secs = ((t1-t0)/cv::getTickFrequency())*1000;
-		printf("OPencvTime: %f ms\n",secs);
+		printf("%f\t",secs);
 
        
 	// size_t aux=numRows();
@@ -132,27 +132,27 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
   //cargar imagen y entregar apuntadores input y output
 	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,  frame); //procesar.cpp
 
-  GpuTimer timer;   	//iniciar timer
-  timer.Start();
+  // GpuTimer timer;   	//iniciar timer
+  // timer.Start();
   
    int64 tt0 = cv::getTickCount();
   //definida en color_seg.cu
   //MODIFICAR KERNEL PARA HSV, DILATACIÓN Y EROSIÓN
   color_seg(h_rgbaImage, d_rgbaImage, d_hsvImage, d_thresImage, d_erodedImage, d_dilatedImage,  numRows(), numCols());
-  timer.Stop();        //deterner timer
-  cudaDeviceSynchronize(); 
+  // timer.Stop();        //deterner timer
+    cudaDeviceSynchronize(); 
 
         int64 tt1 = cv::getTickCount();
         double secs2 = ((tt1-tt0)/cv::getTickFrequency())*1000;
-		printf("CudaTime: %f ms\n",secs2);
+		printf("%f\n",secs2);
 
   
-    int err = printf("Your cuda code ran in: %f msecs.\n\n", timer.Elapsed());
+   //  int err = printf("Your cuda code ran in: %f msecs.\n\n", timer.Elapsed());
   
-  if (err < 0) {
-    std::cerr << "Couldn't print timing information! STDOUT Closed!" << std::endl;
-    exit(1);
-  }
+  // if (err < 0) {
+  //   std::cerr << "Couldn't print timing information! STDOUT Closed!" << std::endl;
+  //   exit(1);
+  // }
 
   //Copiar imagen de dispositivo a host
  size_t numPixels = numRows()*numCols();
@@ -172,16 +172,16 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
  // imshow(window_hsv, img);
-    // imshow(window_thres, imgTH);
-     //   imshow(window_ero_p, imgEro);
-     imshow(window_dil_p, imgDil);
+     imshow(window_thres, imgTH);
+        imshow(window_ero_p, imgEro);
+	 imshow(window_dil_p, imgDil);
 
   cleanup();    //procesar.cpp
 
   //Mostrar imagenes procesadas por OpenCV
-  // imshow(window_detection_name, frame_threshold);
-      imshow(window_dil, frame_dilated);
-      //	imshow(window_ero, frame_eroded);
+   imshow(window_detection_name, frame_threshold);
+   imshow(window_dil, frame_dilated);
+      	imshow(window_ero, frame_eroded);
 
       
         char key = (char) waitKey(30);

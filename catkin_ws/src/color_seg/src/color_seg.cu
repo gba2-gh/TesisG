@@ -151,18 +151,17 @@ int menor=255;
     	int index = numCols*x +y;
 	
 //Kernel with 2D VON NEUMMAN stencil pattern
+//vertical values for the operator
+//max and min to avoid accesing  out of bounds. a la posiciṕnen el grid se le suma una cantidad de posiciones igual al tamaño del kernel, después se desplaza por la mitad de su tamaño}
 
 int kernelSize = 4;
-
-//verticalhorizontal values for the operator
-//max and min to avoid accesing  out of bounds. a la posiciṕnen el grid se le suma una cantidad de posiciones igual al tamaño del kernel, después se desplaza por la mitad de su tamaño}
 for(int i=0; i<kernelSize;i++){
 	int offsetX= min(max(x + i -kernelSize/2,0), numRows -1);
 	int temp= thresImage[offsetX*numCols +y];
 	if(temp < menor){
 		 menor=temp;
 		 }}
-
+//   horizontal
 for(int i=0; i<kernelSize;i++){
 	int offsetY= min(max(y + i -kernelSize/2,0), numCols -1);
 	int temp= thresImage[x*numCols + offsetY];
@@ -170,50 +169,28 @@ for(int i=0; i<kernelSize;i++){
 		 menor=temp;
 		 }}
 
-erodedImage[index]=menor;
+// erodedImage[index]=menor;
 
-// ////////////////////////////dilate
-// __syncthreads();
+ 
+//Kernel rectangular stencil pattern
+// int kernelWidth =4;
+// int kernelHeight =3;
 
-// //x = blockIdx.x * blockDim.x +  threadIdx.x;
-// //y = blockIdx.y *blockDim.y + threadIdx.y;
-// int mayor=0;
-// //arr[3] = {};
+// for(int i=0; i<kernelWidth;i++){
+//  	int offsetY= min(max(y + i -kernelWidth/2,0), numCols -1);
+//       for(int j=0; j<kernelHeight;j++){
+// 	int offsetX= min(max(x + i -kernelHeight/2,0), numRows -1);
+	
+//  	int temp= thresImage[offsetX*numCols + offsetY];
+// 	if(temp< menor){
+//  		 menor=temp;
+//  		 }
 
-
-// if( y >= numCols || x>= numRows){
-//     return;}
-
-// index = numCols*x +y;   
-
-// //printf("thres:%u \n", thresImage[index]);
-
-// //Kernel with 2D VON NEUMMAN stencil pattern
-
-// //kernelSize = 4;
-
-// //vertical values for the operator
-// //max and min to avoid accesing  out of bounds. a la posiciṕnen el grid se le suma una cantidad de posiciones igual al tamaño del kernel, después se desplaza por la mitad de su tamaño}
-// for(int i=0; i<kernelSize;i++){
-// 	int offsetX= min(max(x + i -kernelSize/2,0), numRows -1);
-// 	int temp= erodedImage[offsetX*numCols + y];
-// 	if(temp > mayor){
-// 		 mayor=temp;
-// 		 }
-// }
-
-// //horizontal values
-// for(int i=0; i<kernelSize;i++){
-// 	int offsetY= min(max(y + i -kernelSize/2,0), numCols -1);
-// 	int temp= erodedImage[x*numCols + offsetY ];
-// 	if(temp > mayor){
-// 		 mayor=temp;
-// 		 }
-// }
-
-// dilatedImage[index]=mayor;
+//              }
+// 	}
 
 
+ erodedImage[index]=menor;
 }
 
 
@@ -238,17 +215,17 @@ int index = numCols*x +y;
 
 //Kernel with 2D VON NEUMMAN stencil pattern
 
-int kernelSize = 4;
 
 //vertical values for the operator
 //max and min to avoid accesing  out of bounds. a la posiciṕnen el grid se le suma una cantidad de posiciones igual al tamaño del kernel, después se desplaza por la mitad de su tamaño}
+
+int kernelSize = 4;
 for(int i=0; i<kernelSize;i++){
 	int offsetX= min(max(x + i -kernelSize/2,0), numRows -1);
 	int temp= erodedImage[offsetX*numCols + y];
 	if(temp > mayor){
 		 mayor=temp;
-		 }
-}
+		 }}
 
 //horizontal values
 for(int i=0; i<kernelSize;i++){
@@ -256,8 +233,25 @@ for(int i=0; i<kernelSize;i++){
 	int temp= erodedImage[x*numCols + offsetY ];
 	if(temp > mayor){
 		 mayor=temp;
-		 }
-}
+		 }}
+//Kernel rectangular stencil pattern
+// int kernelWidth =4;
+// int kernelHeight =3;
+
+// for(int i=0; i<kernelWidth;i++){
+//  	int offsetY= min(max(y + i -kernelWidth/2,0), numCols -1);
+//       for(int j=0; j<kernelHeight;j++){
+// 	int offsetX= min(max(x + i -kernelHeight/2,0), numRows -1);
+	
+//  	int temp= erodedImage[offsetX*numCols + offsetY];
+// 	if(temp > mayor){
+//  		 mayor=temp;
+//  		 }
+
+//              }
+// 	}
+
+
 
 dilatedImage[index]=mayor;
 }
