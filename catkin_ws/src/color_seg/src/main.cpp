@@ -113,14 +113,15 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
 	//kernel elíptico para hacer la erosión
 	Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(5,5), Point(2,2));
+	Mat kernel2 = getStructuringElement(MORPH_RECT,Size(5,5));
 	//erosionar con opencv
-       	erode(frame_threshold, frame_eroded, kernel);
+       	erode(frame_threshold, frame_eroded, kernel2);
 
 	//dilatar con opencv
-	dilate(frame_eroded, frame_dilated, kernel);
+	dilate(frame_eroded, frame_dilated, kernel2);
 
 	// timerop.Stop();
-        // int err2 = printf("Your opencv code ran in: %f msecs.\n", timerop.Elapsed());
+        // int err2 = printf("Your opencv code rarn in: %f msecs.\n", timerop.Elapsed());
 	
 	int64 t1 = cv::getTickCount();
         double secs = ((t1-t0)/cv::getTickFrequency())*1000;
@@ -172,16 +173,16 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
  // imshow(window_hsv, img);
-     imshow(window_thres, imgTH);
-        imshow(window_ero_p, imgEro);
+  //  imshow(window_thres, imgTH);
+  // imshow(window_ero_p, imgEro);
 	 imshow(window_dil_p, imgDil);
 
   cleanup();    //procesar.cpp
 
   //Mostrar imagenes procesadas por OpenCV
-   imshow(window_detection_name, frame_threshold);
+  // imshow(window_detection_name, frame_threshold);
    imshow(window_dil, frame_dilated);
-      	imshow(window_ero, frame_eroded);
+   //  	imshow(window_ero, frame_eroded);
 
       
         char key = (char) waitKey(30);

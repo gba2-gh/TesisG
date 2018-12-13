@@ -102,7 +102,7 @@ __global__ void threshold_kernel(const uchar3* hsvImage,
 int Hmin=90, Smin=120, Vmin=100;
 // int Hmin=100, Smin=100, Vmin=110;
 //int Hmin=0, Smin=0, Vmin=0;
-int Hmax=255, Smax=250, Vmax=250;
+int Hmax=170, Smax=250, Vmax=250;
 
   int y = threadIdx.y+ blockIdx.y* blockDim.y;   //globalIdx = (blockIdx * threadsPerBlock) + threadId
 
@@ -136,7 +136,7 @@ if(H>Hmin && H<Hmax && S>Smin && S<Smax && V>Vmin && V<Vmax){
 //KERNEL FOR EROSION
 
 __global__ void erode_kernel(unsigned char * thresImage,
- 	     	  	    	  unsigned char* erodedImage, //unsigned char* dilatedImage,
+ 	     	  	    	  unsigned char* erodedImage, unsigned char* dilatedImage,
  				  int numRows, int numCols){
 
 int x = blockIdx.x * blockDim.x +  threadIdx.x;
@@ -154,7 +154,7 @@ int menor=255;
 //vertical values for the operator
 //max and min to avoid accesing  out of bounds. a la posiciṕnen el grid se le suma una cantidad de posiciones igual al tamaño del kernel, después se desplaza por la mitad de su tamaño}
 
-int kernelSize = 4;
+int kernelSize = 5;
 for(int i=0; i<kernelSize;i++){
 	int offsetX= min(max(x + i -kernelSize/2,0), numRows -1);
 	int temp= thresImage[offsetX*numCols +y];
@@ -168,13 +168,10 @@ for(int i=0; i<kernelSize;i++){
 	if(temp< menor){
 		 menor=temp;
 		 }}
-
-// erodedImage[index]=menor;
-
  
 //Kernel rectangular stencil pattern
-// int kernelWidth =4;
-// int kernelHeight =3;
+// int kernelWidth =5;
+// int kernelHeight =5;
 
 // for(int i=0; i<kernelWidth;i++){
 //  	int offsetY= min(max(y + i -kernelWidth/2,0), numCols -1);
@@ -191,6 +188,8 @@ for(int i=0; i<kernelSize;i++){
 
 
  erodedImage[index]=menor;
+
+
 }
 
 
@@ -219,7 +218,7 @@ int index = numCols*x +y;
 //vertical values for the operator
 //max and min to avoid accesing  out of bounds. a la posiciṕnen el grid se le suma una cantidad de posiciones igual al tamaño del kernel, después se desplaza por la mitad de su tamaño}
 
-int kernelSize = 4;
+int kernelSize = 5;
 for(int i=0; i<kernelSize;i++){
 	int offsetX= min(max(x + i -kernelSize/2,0), numRows -1);
 	int temp= erodedImage[offsetX*numCols + y];
@@ -234,6 +233,8 @@ for(int i=0; i<kernelSize;i++){
 	if(temp > mayor){
 		 mayor=temp;
 		 }}
+
+
 //Kernel rectangular stencil pattern
 // int kernelWidth =4;
 // int kernelHeight =3;
@@ -280,9 +281,9 @@ void color_seg(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
   cudaDeviceSynchronize();
   threshold_kernel<<<gridSize, blockSize>>>(d_hsvImage, d_thresImage, numRows, numCols);
   cudaDeviceSynchronize();
- erode_kernel<<<gridSize,blockSize>>>(d_thresImage, d_erodedImage, numRows, numCols);
+ erode_kernel<<<gridSize,blockSize>>>(d_thresImage, d_erodedImage,d_dilatedImage, numRows, numCols);
   cudaDeviceSynchronize();
-  dilate_kernel<<<gridSize,blockSize>>>(d_erodedImage, d_dilatedImage,numRows, numCols);
+ dilate_kernel<<<gridSize,blockSize>>>(d_erodedImage, d_dilatedImage,numRows, numCols);
   
   //checkCudaErrors(cudaGetLastError());
 }
