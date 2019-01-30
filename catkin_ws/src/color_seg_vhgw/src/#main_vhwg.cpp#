@@ -22,7 +22,7 @@ void color_seg(const uchar4 * const h_rgbaImage,
 	       unsigned char * const d_erodedImage,
 	       unsigned char * const d_dilatedImage,
                             size_t numRows, size_t numCols);
-int indice;
+
 using namespace cv;
 const int max_value_H = 360/2;
 const int max_value = 255;
@@ -66,7 +66,6 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  uchar3        *h_hsvImage, *d_hsvImage;
  unsigned char *h_thresImage, *d_thresImage;
  unsigned char *h_erodedImage, *d_erodedImage, *h_dilatedImage, *d_dilatedImage ;
- unsigned char *h_ero_hgw;
   
 
 
@@ -126,13 +125,13 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 	
 	int64 t1 = cv::getTickCount();
         double secs = ((t1-t0)/cv::getTickFrequency())*1000;
-	//	printf("%f\t",secs);
+		printf("%f\t",secs);
 
        
 	// size_t aux=numRows();
 	// printf("aux=%zu \n",aux);
   //cargar imagen y entregar apuntadores input y output
-	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage, &h_ero_hgw,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,  frame); //procesar.cpp CAMBIAR ASIGNACIÓN DE APUNTADORES
+	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,  frame); //procesar.cpp CAMBIAR ASIGNACIÓN DE APUNTADORES
 
   // GpuTimer timer;   	//iniciar timer
   // timer.Start();
@@ -146,7 +145,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
         int64 tt1 = cv::getTickCount();
         double secs2 = ((tt1-tt0)/cv::getTickFrequency())*1000;
-	//	printf("%f\n",secs2);
+		printf("%f\n",secs2);
 
       
   
@@ -166,44 +165,29 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
  //HGW--------------------------------
 
-                int cols = numCols();   //  320
+		int cols = numCols();     //320
 		int rows = numRows();  //180
-		int p=5;
-		int apron = (p/2)-1;
-		int cont=0;
+		unsigned char* h_ero_hgw[cols*rows];
+		for(int x=0;x<rows;x++)
+		  for(int y=0;y<cols;y++)
+		  index=x*rows + y
+			h_ero_hgw[		
 		
-		for(int x=0;x<rows;x++){
-		  for(int y=0;y<cols;y++){
-		    indice=y*rows + x;//x*rows + y ;
-
-                    if(cont=0){ //agregar apron izquierdo
-		      for(int c; c<=p;c++)
-			h_ero_hgw[indice]=0; //crear otro indice
-		    }
-
-		    
-		    h_ero_hgw[indice]=h_thresImage[indice];
-
-		     printf("%u         ", h_ero_hgw[indice]);
-		     printf("%u \n", h_thresImage[indice]);
-		  }}
-
-		  
-	        
+ 
 
   //Desplegar imagen de salida
 
   cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_hsvImage);         //HSV Image
   cv::Mat imgTH = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_thresImage);
   cv::Mat imgEro = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_erodedImage);
-  cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_ero_hgw);  //Dilated Image
+  cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_dilatedImage);  //Dilated Image
  //cv::Mat imgRGBA ;
  // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
  // imshow(window_hsv, img);
-     imshow(window_thres, imgTH);
+  //   imshow(window_thres, imgTH);
   //     imshow(window_ero_p, imgEro);
-  	 imshow(window_dil_p, imgDil);
+	 imshow(window_dil_p, imgDil);
 
   cleanup();    //procesar.cpp
 
@@ -212,7 +196,13 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
    imshow(window_dil, frame_dilated);
    //  	imshow(window_ero, frame_eroded);
 
-          }
+      
+        char key = (char) waitKey(30);
+        if (key == 'q' || key == 27)   //stop at key press
+        {
+            break;
+        }
+    }
 
   return 0;
 }
