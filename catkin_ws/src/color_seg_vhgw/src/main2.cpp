@@ -169,23 +169,52 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
                 int cols = numCols();   //  320
 		int rows = numRows();  //180
 		int p=5;
-		int apron = (p/2)-1;
+		int apron = 2;
 		int cont=0;
+		int i=0;
+		int indicehgw=0 ;
 		
 		for(int x=0;x<rows;x++){
 		  for(int y=0;y<cols;y++){
 		    indice=y*rows + x;//x*rows + y ;
 
-                    if(cont=0){ //agregar apron izquierdo
-		      for(int c; c<=p;c++)
-			h_ero_hgw[indice]=0; //crear otro indice
+                    if(cont==0){ //agregar apron izquierdo; inicia una nueva ventana
+		      
+		      for(int c=0; c<apron; c++){
+			h_ero_hgw[indicehgw]=1;
+			printf("%u \n", h_ero_hgw[indicehgw]);
+		        indicehgw++;
+		        }
+		      // cont++;
 		    }
 
-		    
-		    h_ero_hgw[indice]=h_thresImage[indice];
+		         if (cont>=p){ //agregar apron derecho; finalizar ventana
+		           
+			   for(int c=0; c<apron; c++){
+			    
+			     h_ero_hgw[indicehgw]=1; //crear otro indice
+			     printf("%u \n", h_ero_hgw[indicehgw]);
+		             indicehgw++;
+			     
+			     }
+		              cont =0; //reiniciar contador de ventana
+			       // h_ero_hgw[indicehgw]=h_thresImage[indice];
+			       // printf("%u  ", h_ero_hgw[indicehgw]);
+			       // indicehgw++;
+			       
+		         }else{
+			 
+			    h_ero_hgw[indicehgw]=h_thresImage[indice];
+			    printf("%u  ", h_ero_hgw[indicehgw]);
+			    printf("%u \n", h_thresImage[indice]);
+		           cont++;
+		           indicehgw++;
+			 
+			   }
+			 
 
-		     printf("%u         ", h_ero_hgw[indice]);
-		     printf("%u \n", h_thresImage[indice]);
+		    
+		   
 		  }}
 
 		  
@@ -210,9 +239,18 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
   //Mostrar imagenes procesadas por OpenCV
   // imshow(window_detection_name, frame_threshold);
    imshow(window_dil, frame_dilated);
-   //  	imshow(window_ero, frame_eroded);
+   // 	imshow(window_ero, frame_eroded);
 
+
+
+	char key = (char) waitKey(30);
+        if (key == 'q' || key == 27)   //stop at key press
+        {
+            break;
+        }
           }
+
+        
 
   return 0;
 }

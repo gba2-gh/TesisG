@@ -47,7 +47,7 @@ void preProcess(uchar4 **inputImage, uchar3 **hsvImage, unsigned char **thresIma
   //allocate mem for dilate output
    imageDil.create(frame.rows, frame.cols, CV_8UC1);
    //allocate mem for dilate output
-   imageEroHGW.create(frame.rows, frame.cols, CV_8UC1);
+   imageEroHGW.create(frame.rows*2, frame.cols*2, CV_8UC1);
 
    
 
