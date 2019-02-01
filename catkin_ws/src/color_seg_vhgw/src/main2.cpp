@@ -66,7 +66,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  uchar3        *h_hsvImage, *d_hsvImage;
  unsigned char *h_thresImage, *d_thresImage;
  unsigned char *h_erodedImage, *d_erodedImage, *h_dilatedImage, *d_dilatedImage ;
- unsigned char *h_ero_hgw, *h_eroimage_hgw, w[10]={0}, s[10]={0}, r[10]={0}, result[10]={0} ;
+ unsigned char *h_ero_hgw, *h_erohgw_o, w[10]={0}, s[10]={0}, r[10]={0}, result[10]={0} ;
   
 
 
@@ -132,7 +132,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 	// size_t aux=numRows();
 	// printf("aux=%zu \n",aux);
   //cargar imagen y entregar apuntadores input y output
-	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage, &h_ero_hgw,&h_eroimage_hgw,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,  frame); //procesar.cpp CAMBIAR ASIGNACIÓN DE APUNTADORES
+	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage, &h_ero_hgw,&h_erohgw_o,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,  frame); //procesar.cpp CAMBIAR ASIGNACIÓN DE APUNTADORES
 
   // GpuTimer timer;   	//iniciar timer
   // timer.Start();
@@ -179,13 +179,15 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
 		for(int x=0;x<rows;x++){
 		  for(int y=0;y<cols;y++){
-		    indice=y*rows + x;//x*rows + y ;
+		    indice=x*cols + y;//x*rows + y ;
+
+		    //h_erohgw_o[indice]=h_thresImage[indice];
 
                     if(cont==0){ //agregar apron izquierdo; inicia una nueva ventana
 		      
 		      for(int c=0; c<apron; c++){
-			h_ero_hgw[indicehgw]=0;
-			// printf("%u \n", h_ero_hgw[indicehgw]);
+		    	h_ero_hgw[indicehgw]=0;
+		    	// printf("%u \n", h_ero_hgw[indicehgw]);
 		        indicehgw++;
 		        
 		        }
@@ -194,25 +196,25 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
 		         if (cont>=p){ //agregar apron derecho; finalizar ventana
 		           
-			   for(int c=0; c<apron; c++){
+		    	   for(int c=0; c<apron; c++){
 			    
-			     h_ero_hgw[indicehgw]=0; //crear otro indice
-			     // printf("%u \n", h_ero_hgw[indicehgw]);
+		    	     h_ero_hgw[indicehgw]=0; //crear otro indice
+		    	     // printf("%u \n", h_ero_hgw[indicehgw]);
 		             indicehgw++;
 			     
-			     }
-		              cont =0; //reiniciar contador de ventana
-
+		    	     }
+		              cont = 0; //reiniciar contador de ventana
+			      y=y-1;  //regresar 1 posición en la fila
 			       
 		         }else{
 			 
-			    h_ero_hgw[indicehgw]=h_thresImage[indice];
-			    // printf("%u  ", h_ero_hgw[indicehgw]);
-			    // printf("%u \n", h_thresImage[indice]);
+		    	    h_ero_hgw[indicehgw]=h_thresImage[indice];
+		    	    // printf("%u  ", h_ero_hgw[indicehgw]);
+		    	    // printf("%u \n", h_thresImage[indice]);
 		           cont++;
 		           indicehgw++;
 			 
-			   }
+			 }
 
 			 // if(indicehgw % w ==0){  //ventana completa
                          //   for(int i=0; i<=w;i++){
@@ -224,58 +226,89 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
 
 			 // }
+
+		       
 		    
 		  }}
+		
                 int hgw_size = indicehgw;
 		//	printf("max:%i \n",indicemax);
        //create suffix and max array
+		int x=0;
+		int y=0;
 	        w_size = 2*p -1;
 		indicehgw=0;
-	       	//for(int i=0; i<hgw_size;i++){
-		  for(int j=0; j<w_size; j++){	
+		int indicehgw_o=0;
+
+		
+		while(x<rows){
+	        
+		//	while(indicehgw<=hgw_size){      
+		  for(int j=0; j<w_size; j++){	//recuperar ventana
 
 		    w[j]= h_ero_hgw[indicehgw];
 		    s[j]= 0;
 		    r[j]= 0;
-		    printf("w=%u ",w[j]);
+		     printf("w=%u ",w[j]);
 		    indicehgw++;			 
 		  }
 		  
-		  for(int k=0; k<=(p-1);k++){
+		  for(int k=0; k<=(p-1);k++){      //arreglo prefix
 		    for(int q=0; (k+q)<=(p-1);q++){
 		      s[k]=max(w[k+q],s[k]);
 		    }
-		      printf(" s=%u ",s[k]);
+		    // printf(" s=%u ",s[k]);
 		    }
 		  
-		  for(int l=(p-1); l<=(2*p-2); l++){
+		  for(int l=(p-1); l<=(2*p-2); l++){ //arreglo sufix
 		    for(int m=0; (l+m)<=(2*p-2);m++){
 		      r[l-(p-1)]=max(w[l+m],r[l-(p-1)]);
 		    }
-		    printf(" r=%u ",r[l -(p-1)]);
+		    // printf(" r=%u ",r[l -(p-1)]);
 		    }
-                  printf("\n");
-		  for(int z=0; z<p;z++){
-		    result[z]=max(s[z],r[z]);
-		    printf(" result=%u ",result[z]);
-				  
-				  }
-		  printf("\n");		  
-		  //}
+                  //printf("\n");
+		  
+		  for(int z=0; z<p;z++){ 
+		    result[z]=max(s[z],r[5-z]);               //resultado final  
+		    //printf(" result=%u ",result[z]);
+
+		     if(y<cols){                             //insertar resultado en imagen nueva
+
+		      indicehgw_o=x*cols + y;
+		    h_erohgw_o[indicehgw_o]=result[z];
+		     y++;
+		    }else{
+		      // if(x>160){printf("hola \n");}
+		      x++;
+		      y=0;
+		      indicehgw_o=x*cols + y;
+		      h_erohgw_o[indicehgw_o]=result[z];
+		      // printf("x=%i \n",x);
+
+		    	}
+
+		  
+		    // printf("\n");		  
+		                         }
+
+		   }
+
+       
+		
 
   //Desplegar imagen de salida
 
   cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_hsvImage);         //HSV Image
   cv::Mat imgTH = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_thresImage);
-  cv::Mat imgEro = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_erodedImage);
-  cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_ero_hgw);  //Dilated Image
+  cv::Mat imgEro = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_erohgw_o);
+  cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_dilatedImage);  //Dilated Image
  //cv::Mat imgRGBA ;
  // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
  // imshow(window_hsv, img);
- //    imshow(window_thres, imgTH);
-  //     imshow(window_ero_p, imgEro);
-  //	 imshow(window_dil_p, imgDil);
+     imshow(window_thres, imgTH);
+  imshow(window_ero_p, imgEro);
+  // 	 imshow(window_dil_p, imgDil);
 
   cleanup();    //procesar.cpp
 
@@ -291,9 +324,9 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
         {
             break;
         }
-          }
+		}
 
         
 
   return 0;
-}
+      }

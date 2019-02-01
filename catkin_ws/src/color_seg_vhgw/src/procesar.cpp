@@ -16,7 +16,7 @@ cv::Mat imageThres;
 cv::Mat imageEro;
 cv::Mat imageDil;
 cv::Mat imageEroHGW;
-cv::Mat s;
+cv::Mat imageEroHGWo;
 
 uchar4        *d_rgbaImage__;
 uchar3        *d_hsvImage__;
@@ -29,7 +29,7 @@ size_t numCols() { return imageRGBA.cols; }
 
 void preProcess(uchar4 **inputImage, uchar3 **hsvImage, unsigned char **thresImage,
 		unsigned char **erodedImage, unsigned char **dilatedImage,
-		unsigned char **ero_hgw, unsigned char **s_hgw,
+		unsigned char **ero_hgw, unsigned char **erohgw_o,
                 uchar4 **d_rgbaImage, uchar3 **d_hsvImage,
 		unsigned char **d_thresImage,
 		unsigned char **d_erodedImage, unsigned char **d_dilatedImage,
@@ -50,7 +50,7 @@ void preProcess(uchar4 **inputImage, uchar3 **hsvImage, unsigned char **thresIma
    imageDil.create(frame.rows, frame.cols, CV_8UC1);
    //allocate mem for dilate output
    imageEroHGW.create(frame.rows*2, frame.cols*2, CV_8UC1);
-s.create(frame.rows, frame.cols, CV_8UC1);
+   imageEroHGWo.create(frame.rows, frame.cols, CV_8UC1);
    
 
   //verify that image is continous
@@ -66,7 +66,7 @@ s.create(frame.rows, frame.cols, CV_8UC1);
   *erodedImage = (unsigned char*)imageEro.ptr<unsigned char>(0);
   *dilatedImage = (unsigned char*)imageDil.ptr<unsigned char>(0);
   *ero_hgw= (unsigned char*)imageEroHGW.ptr<unsigned char>(0);
-  *s_hgw= (unsigned char*)s.ptr<unsigned char>(0);
+  *erohgw_o= (unsigned char*)imageEroHGWo.ptr<unsigned char>(0);
   
   const size_t numPixels = numRows() * numCols();
   //allocate memory on the device for both input and output
