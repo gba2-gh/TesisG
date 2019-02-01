@@ -66,7 +66,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  uchar3        *h_hsvImage, *d_hsvImage;
  unsigned char *h_thresImage, *d_thresImage;
  unsigned char *h_erodedImage, *d_erodedImage, *h_dilatedImage, *d_dilatedImage ;
- unsigned char *h_ero_hgw;
+ unsigned char *h_ero_hgw, *h_eroimage_hgw, w[10]={0}, s[10]={0}, r[10]={0}, result[10]={0} ;
   
 
 
@@ -132,7 +132,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 	// size_t aux=numRows();
 	// printf("aux=%zu \n",aux);
   //cargar imagen y entregar apuntadores input y output
-	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage, &h_ero_hgw,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,  frame); //procesar.cpp CAMBIAR ASIGNACIÓN DE APUNTADORES
+	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage, &h_ero_hgw,&h_eroimage_hgw,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,  frame); //procesar.cpp CAMBIAR ASIGNACIÓN DE APUNTADORES
 
   // GpuTimer timer;   	//iniciar timer
   // timer.Start();
@@ -173,7 +173,10 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 		int cont=0;
 		int i=0;
 		int indicehgw=0 ;
-		
+		int w_size=0;
+		int w_cont=0;
+		int indice_s=0;
+
 		for(int x=0;x<rows;x++){
 		  for(int y=0;y<cols;y++){
 		    indice=y*rows + x;//x*rows + y ;
@@ -181,9 +184,10 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
                     if(cont==0){ //agregar apron izquierdo; inicia una nueva ventana
 		      
 		      for(int c=0; c<apron; c++){
-			h_ero_hgw[indicehgw]=1;
-			printf("%u \n", h_ero_hgw[indicehgw]);
+			h_ero_hgw[indicehgw]=0;
+			// printf("%u \n", h_ero_hgw[indicehgw]);
 		        indicehgw++;
+		        
 		        }
 		      // cont++;
 		    }
@@ -192,33 +196,72 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 		           
 			   for(int c=0; c<apron; c++){
 			    
-			     h_ero_hgw[indicehgw]=1; //crear otro indice
-			     printf("%u \n", h_ero_hgw[indicehgw]);
+			     h_ero_hgw[indicehgw]=0; //crear otro indice
+			     // printf("%u \n", h_ero_hgw[indicehgw]);
 		             indicehgw++;
 			     
 			     }
 		              cont =0; //reiniciar contador de ventana
-			       // h_ero_hgw[indicehgw]=h_thresImage[indice];
-			       // printf("%u  ", h_ero_hgw[indicehgw]);
-			       // indicehgw++;
+
 			       
 		         }else{
 			 
 			    h_ero_hgw[indicehgw]=h_thresImage[indice];
-			    printf("%u  ", h_ero_hgw[indicehgw]);
-			    printf("%u \n", h_thresImage[indice]);
+			    // printf("%u  ", h_ero_hgw[indicehgw]);
+			    // printf("%u \n", h_thresImage[indice]);
 		           cont++;
 		           indicehgw++;
 			 
 			   }
-			 
 
+			 // if(indicehgw % w ==0){  //ventana completa
+                         //   for(int i=0; i<=w;i++){
+			     
+		         //     s[indice_s]= h_ero_hgw[indicehgw];
+			 //     printf("%u",s[indice_s]);
+			 //     indice_s++;
+			 //   }
+
+
+			 // }
 		    
-		   
 		  }}
+                int hgw_size = indicehgw;
+		//	printf("max:%i \n",indicemax);
+       //create suffix and max array
+	        w_size = 2*p -1;
+		indicehgw=0;
+	       	//for(int i=0; i<hgw_size;i++){
+		  for(int j=0; j<w_size; j++){	
 
+		    w[j]= h_ero_hgw[indicehgw];
+		    s[j]= 0;
+		    r[j]= 0;
+		    printf("w=%u ",w[j]);
+		    indicehgw++;			 
+		  }
 		  
-	        
+		  for(int k=0; k<=(p-1);k++){
+		    for(int q=0; (k+q)<=(p-1);q++){
+		      s[k]=max(w[k+q],s[k]);
+		    }
+		      printf(" s=%u ",s[k]);
+		    }
+		  
+		  for(int l=(p-1); l<=(2*p-2); l++){
+		    for(int m=0; (l+m)<=(2*p-2);m++){
+		      r[l-(p-1)]=max(w[l+m],r[l-(p-1)]);
+		    }
+		    printf(" r=%u ",r[l -(p-1)]);
+		    }
+                  printf("\n");
+		  for(int z=0; z<p;z++){
+		    result[z]=max(s[z],r[z]);
+		    printf(" result=%u ",result[z]);
+				  
+				  }
+		  printf("\n");		  
+		  //}
 
   //Desplegar imagen de salida
 
@@ -230,15 +273,15 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
  // imshow(window_hsv, img);
-     imshow(window_thres, imgTH);
+ //    imshow(window_thres, imgTH);
   //     imshow(window_ero_p, imgEro);
-  	 imshow(window_dil_p, imgDil);
+  //	 imshow(window_dil_p, imgDil);
 
   cleanup();    //procesar.cpp
 
   //Mostrar imagenes procesadas por OpenCV
   // imshow(window_detection_name, frame_threshold);
-   imshow(window_dil, frame_dilated);
+  //  imshow(window_dil, frame_dilated);
    // 	imshow(window_ero, frame_eroded);
 
 
