@@ -178,7 +178,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 		int indice_s=0;
 
 		for(int x=0;x<rows;x++){
-		  for(int y=0;y<cols;y++){
+		  for(int y=0;y<=cols;y++){  ///last bug
 		    indice=x*cols + y;//x*rows + y ;
 
 		    //h_erohgw_o[indice]=h_thresImage[indice];
@@ -215,7 +215,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 		           indicehgw++;
 			 
 			 }
-
+			 
 			 // if(indicehgw % w ==0){  //ventana completa
                          //   for(int i=0; i<=w;i++){
 			     
@@ -223,14 +223,14 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 			 //     printf("%u",s[indice_s]);
 			 //     indice_s++;
 			 //   }
-
+			 
 
 			 // }
 
 		       
 		    
 		  }}
-		
+		printf("indice=%i \n",indice);
                 int hgw_size = indicehgw;
 		//	printf("max:%i \n",indicemax);
        //create suffix and max array
@@ -241,7 +241,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 		int indicehgw_o=0;
 
 		
-		while(x<rows){
+			while(x<rows){
 	        
 		//	while(indicehgw<=hgw_size){      
 		  for(int j=0; j<w_size; j++){	//recuperar ventana
@@ -249,7 +249,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 		    w[j]= h_ero_hgw[indicehgw];
 		    s[j]= 0;
 		    r[j]= 0;
-		     printf("w=%u ",w[j]);
+		    //  printf("w=%u ",w[j]);
 		    indicehgw++;			 
 		  }
 		  
@@ -257,14 +257,14 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 		    for(int q=0; (k+q)<=(p-1);q++){
 		      s[k]=max(w[k+q],s[k]);
 		    }
-		    // printf(" s=%u ",s[k]);
+		    //printf(" s=%u ",s[k]);
 		    }
 		  
 		  for(int l=(p-1); l<=(2*p-2); l++){ //arreglo sufix
 		    for(int m=0; (l+m)<=(2*p-2);m++){
 		      r[l-(p-1)]=max(w[l+m],r[l-(p-1)]);
 		    }
-		    // printf(" r=%u ",r[l -(p-1)]);
+		    //printf(" r=%u ",r[l -(p-1)]);
 		    }
                   //printf("\n");
 		  
@@ -273,26 +273,26 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 		    //printf(" result=%u ",result[z]);
 
 		     if(y<cols){                             //insertar resultado en imagen nueva
-
 		      indicehgw_o=x*cols + y;
 		    h_erohgw_o[indicehgw_o]=result[z];
 		     y++;
+		     
 		    }else{
 		      // if(x>160){printf("hola \n");}
 		      x++;
 		      y=0;
 		      indicehgw_o=x*cols + y;
 		      h_erohgw_o[indicehgw_o]=result[z];
-		      // printf("x=%i \n",x);
+		      
 
 		    	}
 
-		  
-		    // printf("\n");		  
+		    
+		     // printf("\n");		  
 		                         }
 
 		   }
-
+  printf("indicehgw_o=%i \n",indicehgw_o);
        
 		
 
