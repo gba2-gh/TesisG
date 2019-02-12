@@ -81,7 +81,7 @@ hsvImage[index].z= V;
 
 
 __global__ void threshold_kernel(const uchar3* hsvImage,
- 	     	  	    	  unsigned char* thresImage,
+ 	     	  	    	  unsigned char* thresImage,				  
  				  int numRows, int numCols){
 int Hmin=90, Smin=120, Vmin=100;
 // int Hmin=100, Smin=100, Vmin=110;
@@ -108,6 +108,7 @@ if(H>Hmin && H<Hmax && S>Smin && S<Smax && V>Vmin && V<Vmax){
 
 
 }
+
  }
 
 
@@ -231,14 +232,85 @@ dilatedImage[index]=mayor;
 }
 
 
+__global__ void window_hgw_kernel(unsigned char * thresImage,
+ 	     	  	    	  unsigned char* windowImage, 
+ 				  int numRows, int numCols){
+
+		int p=5;
+		int apron = 2;
+		int cont=0;
+		int i=0;
+		int indicehgw=0 ;
+		int indice =0;
+	
+		
+		for(int x=0;x<numRows;x++){
+		  for(int y=0;y<=numCols;y++){  ///last bug
+		    indice=x*numCols + y;//x*numRows + y ;
+
+		    //h_erohgw_o[indice]=h_thresImage[indice];
+
+                    if(cont==0){ //agregar apron izquierdo; inicia una nueva ventana
+		      
+		      for(int c=0; c<apron; c++){
+		    	windowImage[indicehgw]=0;             //0:dilat|| 255||ero
+		    	// printf("%u \n", h_ero_hgw[indicehgw]);
+		        indicehgw++;
+		        
+		        }
+		      
+		    }
+
+		         if (cont>=p){ //agregar apron derecho; finalizar ventana
+		           
+		    	   for(int c=0; c<apron; c++){
+			    
+		    	     windowImage[indicehgw]=0; 
+		    	     // printf("%u \n", h_ero_hgw[indicehgw]);
+		             indicehgw++;
+			     
+		    	     }
+		              cont = 0; //reiniciar contador de ventana
+			      y=y-1;  //regresar 1 posición en la fila
+			       
+		         }else{
+			 
+		    	    windowImage[indicehgw]=thresImage[indice];
+		    	    // printf("%u  ", h_ero_hgw[indicehgw]);
+		    	    // printf("%u \n", h_thresImage[indice]);
+		           cont++;
+		           indicehgw++;
+			 
+			 }
+			 
+			       
+		    
+		  }}
+
+
+
+
+}
+
+
+__global__ void ero_hgw_kernel(unsigned char * windowImage,
+ 	     	  	    	  unsigned char* erohgwImage, 
+ 				  int numRows, int numCols){
+
+}
+
+
+
+
+
 void color_seg(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
                             uchar3 * const d_hsvImage, unsigned char * d_thresImage,
 			    unsigned char * d_erodedImage, unsigned char * d_dilatedImage,
+			    unsigned char * d_window_hgw, unsigned char * d_ero_hgw,
 			    size_t numRows, size_t numCols)
 {
 
 
-//exec speed greatly decreases with 16 & 8 th per block | best=8  (warp/4) 
   
   int   blockWidth = 8;   // (dimensionX / gridbloqueenX) = threadsporbloqueenX
 
@@ -253,10 +325,14 @@ void color_seg(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
   rgba_2_hsv<<<gridSize, blockSize>>>(d_rgbaImage, d_hsvImage, numRows, numCols); 
  // cudaDeviceSynchronize();
   threshold_kernel<<<gridSize, blockSize>>>(d_hsvImage, d_thresImage, numRows, numCols);
+  window_hgw_kernel<<<1,1>>>(d_thresImage,d_window_hgw, numRows, numCols);
  // cudaDeviceSynchronize();
- erode_kernel<<<gridSize,blockSize>>>(d_thresImage, d_erodedImage, numRows, numCols);
- // cudaDeviceSynchronize();
-  dilate_kernel<<<gridSize,blockSize>>>(d_erodedImage, d_dilatedImage,numRows, numCols);
+
+ero_hgw_kernel<<<gridSize, blockSize>>>(d_window_hgw, d_ero_hgw, numRows, numCols);
+
+ // erode_kernel<<<gridSize,blockSize>>>(d_thresImage, d_erodedImage, numRows, numCols);
+ // // cudaDeviceSynchronize();
+ //  dilate_kernel<<<gridSize,blockSize>>>(d_erodedImage, d_dilatedImage,numRows, numCols);
   
   //checkCudaErrors(cudaGetLastError());
 }
