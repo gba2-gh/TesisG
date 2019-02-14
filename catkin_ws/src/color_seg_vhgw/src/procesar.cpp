@@ -27,6 +27,8 @@ unsigned char  *d_dilatedImage__;
 unsigned char *d_window_hgw__;
 unsigned char *d_erohgw__;
 unsigned char *d_dilhgw__;
+unsigned char *d_suffix__;
+unsigned char *d_prefix__;
 
 size_t numRows() { return imageRGBA.rows; }
 size_t numCols() { return imageRGBA.cols; }
@@ -38,6 +40,7 @@ void preProcess(uchar4 **inputImage, uchar3 **hsvImage, unsigned char **thresIma
 		unsigned char **d_thresImage,
 		unsigned char **d_erodedImage, unsigned char **d_dilatedImage,
 		unsigned char **d_window_hgw, unsigned char **d_erohgw, unsigned char **d_dilhgw,
+		unsigned char **d_suffix, unsigned char **d_prefix,
 		cv::Mat frame) {
   //make sure the context initializes ok
   checkCudaErrors(cudaFree(0));
@@ -81,9 +84,11 @@ void preProcess(uchar4 **inputImage, uchar3 **hsvImage, unsigned char **thresIma
   checkCudaErrors(cudaMalloc(d_thresImage, sizeof(unsigned char) * numPixels));
   checkCudaErrors(cudaMalloc(d_erodedImage, sizeof(unsigned char) * numPixels));
   checkCudaErrors(cudaMalloc(d_dilatedImage, sizeof(unsigned char) * numPixels));
-  checkCudaErrors(cudaMalloc(d_window_hgw, sizeof(unsigned char) * numPixels*2));
-  checkCudaErrors(cudaMalloc(d_erohgw, sizeof(unsigned char) * numPixels*2));
-  checkCudaErrors(cudaMalloc(d_dilhgw, sizeof(unsigned char) * numPixels*2));
+  checkCudaErrors(cudaMalloc(d_window_hgw, sizeof(unsigned char) * numPixels));
+  checkCudaErrors(cudaMalloc(d_erohgw, sizeof(unsigned char) * numPixels));
+  checkCudaErrors(cudaMalloc(d_dilhgw, sizeof(unsigned char) * numPixels));
+  checkCudaErrors(cudaMalloc(d_suffix, sizeof(unsigned char) * numPixels));
+  checkCudaErrors(cudaMalloc(d_prefix, sizeof(unsigned char) * numPixels));
   checkCudaErrors(cudaMemset(*d_hsvImage, 0, numPixels * sizeof(uchar3))); //make sure no memory is left laying around
   cudaMemset(*d_thresImage, 0, numPixels * sizeof(unsigned char)); //make sure no memory is left laying around
   cudaMemset(*d_erodedImage, 0, numPixels * sizeof(unsigned char)); //make sure no memory is left laying around
@@ -101,6 +106,8 @@ void preProcess(uchar4 **inputImage, uchar3 **hsvImage, unsigned char **thresIma
   d_window_hgw__ = *d_window_hgw;
     d_erohgw__ = *d_erohgw;
   d_dilhgw__ = *d_dilhgw;
+  d_suffix__=*d_suffix;
+  d_prefix__=*d_prefix;
   
 }
 
@@ -118,4 +125,6 @@ void cleanup()
   cudaFree(d_window_hgw__);
   cudaFree(d_erohgw__);
   cudaFree(d_dilhgw__);
+  cudaFree(d_suffix__);
+  cudaFree(d_prefix__);
 }

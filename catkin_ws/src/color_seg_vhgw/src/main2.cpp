@@ -21,8 +21,10 @@ void color_seg(const uchar4 * const h_rgbaImage,
 	                    unsigned char * const d_thresImage,
 	       unsigned char * const d_erodedImage,
 	       unsigned char * const d_dilatedImage,
-	       unsigned char * const d_window_hgw,
 	       unsigned char * const d_erohgw,
+	       unsigned char * const d_dilhgw,
+	       unsigned char * const d_suffix,
+	       unsigned char * const d_prefix,
 		 size_t numRows, size_t numCols);
 int indice;
 using namespace cv;
@@ -71,6 +73,8 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  unsigned char *h_window_hgw, *d_window_hgw, w[10]={0}, s[10]={0}, r[10]={0}, result[10]={0} ;
  unsigned char *h_erohgw, *d_erohgw ;
  unsigned char *h_dilhgw, *d_dilhgw ;
+ unsigned char *d_suffix, *d_prefix;
+ 
   
 
 
@@ -130,27 +134,27 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 	
 	int64 t1 = cv::getTickCount();
         double secs = ((t1-t0)/cv::getTickFrequency())*1000;
-	//	printf("%f\t",secs);
+		printf("%f\t",secs);
 
        
 	// size_t aux=numRows();
 	// printf("aux=%zu \n",aux);
   //cargar imagen y entregar apuntadores input y output
-	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage, &h_window_hgw,&h_erohgw,&h_dilhgw,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,&d_window_hgw, &d_erohgw, &d_dilhgw,  frame); //procesar.cpp CAMBIAR ASIGNACIÓN DE APUNTADORES
+	preProcess(&h_rgbaImage, &h_hsvImage, &h_thresImage, &h_erodedImage, &h_dilatedImage, &h_window_hgw,&h_erohgw,&h_dilhgw,  &d_rgbaImage, &d_hsvImage, &d_thresImage, &d_erodedImage, &d_dilatedImage,&d_window_hgw, &d_erohgw, &d_dilhgw,&d_suffix, &d_prefix, frame); //procesar.cpp CAMBIAR ASIGNACIÓN DE APUNTADORES
 
-  // GpuTimer timer;   	//iniciar timer
-  // timer.Start();
+	//  GpuTimer timer;   	//iniciar timer
+	//timer.Start();
   
    int64 tt0 = cv::getTickCount();
   //definida en color_seg.cu
   //MODIFICAR KERNEL PARA HSV, DILATACIÓN Y EROSIÓN
-   color_seg(h_rgbaImage, d_rgbaImage, d_hsvImage, d_thresImage, d_erodedImage, d_dilatedImage, d_window_hgw,d_erohgw,  numRows(), numCols());
+   color_seg(h_rgbaImage, d_rgbaImage, d_hsvImage, d_thresImage, d_erodedImage, d_dilatedImage, d_erohgw,d_dilhgw, d_suffix, d_prefix,  numRows(), numCols());
   // timer.Stop();        //deterner timer
     cudaDeviceSynchronize(); 
 
         int64 tt1 = cv::getTickCount();
         double secs2 = ((tt1-tt0)/cv::getTickFrequency())*1000;
-	//	printf("%f\n",secs2);
+		printf("%f\n",secs2);
 
       
   
@@ -167,6 +171,8 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  cudaMemcpy(h_thresImage, d_thresImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost);
  cudaMemcpy(h_erodedImage, d_erodedImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost);
  cudaMemcpy(h_dilatedImage, d_dilatedImage, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost);
+ cudaMemcpy(h_erohgw, d_erohgw, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost);
+ cudaMemcpy(h_dilhgw, d_dilhgw, sizeof(unsigned char) * numPixels, cudaMemcpyDeviceToHost);
 
  //HGW--------------------------------
 
@@ -176,106 +182,106 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
  int p=3;
  int c=0;
 
- //HORIZONTAL
- for(int k=0; k<rows;k++){ 
- for(int i=0; i<cols/p ;i++){ //arreglo s
-   offset=p*i + (p/2 + 1) + k*cols; 
-   h_erohgw[offset + p -1] = h_thresImage[offset +p -1]; // agregar primer dato
-   w[c]=h_thresImage[offset +p -1];
-   //printf("s=%u ",h_erohgw[offset+p-1]);
-     for(int j=offset + p -2; j>=offset; j--){
-       h_erohgw[j]=min(h_thresImage[j], h_erohgw[j+1]);
-       c++;
-       w[c]= h_thresImage[j];
-       //  printf("s=%u ",h_erohgw[j]);
-     }
+ // //HORIZONTAL
+//  for(int k=0; k<rows;k++){ 
+//  for(int i=0; i<cols/p ;i++){ //arreglo s
+//    offset=p*i + (p/2 + 1) + k*cols; 
+//    h_erohgw[offset + p -1] = h_thresImage[offset +p -1]; // agregar primer dato
+//    w[c]=h_thresImage[offset +p -1];
+//    //printf("s=%u ",h_erohgw[offset+p-1]);
+//      for(int j=offset + p -2; j>=offset; j--){
+//        h_erohgw[j]=min(h_thresImage[j], h_erohgw[j+1]);
+//        c++;
+//        w[c]= h_thresImage[j];
+//        //  printf("s=%u ",h_erohgw[j]);
+//      }
 
-h_dilhgw[offset] = h_thresImage[offset] ;// agregar primer dato
-//printf("r=%u ",h_dilhgw[offset]);
-   for(int j=offset + 1; j<=(offset + (p-1)); j++){
+// h_dilhgw[offset] = h_thresImage[offset] ;// agregar primer dato
+// //printf("r=%u ",h_dilhgw[offset]);
+//    for(int j=offset + 1; j<=(offset + (p-1)); j++){
      
-       h_dilhgw[j]=min(h_thresImage[j], h_dilhgw[j-1]);
-       c++;
-       w[c]=h_thresImage[j];
-       //     printf("r=%u ",h_dilhgw[j]);
+//        h_dilhgw[j]=min(h_thresImage[j], h_dilhgw[j-1]);
+//        c++;
+//        w[c]=h_thresImage[j];
+//        //     printf("r=%u ",h_dilhgw[j]);
        
-    }
+//     }
 
-   // printf("\n");
-     for(int i=0; i<= 2*(p-1); i++){
-       //	 printf("w=%u ",w[i]); 
-     }
+//    // printf("\n");
+//      for(int i=0; i<= 2*(p-1); i++){
+//        //	 printf("w=%u ",w[i]); 
+//      }
 
-     c=0;
-     //printf("\n");
-     //printf("k= %i",k);
-     // printf("\n");
+//      c=0;
+//      //printf("\n");
+//      //printf("k= %i",k);
+//      // printf("\n");
      
      
- }
- }
+//  }
+//  }
 
-  for(int x=0; x<rows;x++){
-   for(int y=0; y<cols;y++){
-     indice=x*cols + y;
-     h_window_hgw[indice]=min(h_erohgw[indice],h_dilhgw[indice]); //result
+//   for(int x=0; x<rows;x++){
+//    for(int y=0; y<cols;y++){
+//      indice=x*cols + y;
+//      h_window_hgw[indice]=min(h_erohgw[indice],h_dilhgw[indice]); //result
      
-   }
- }
+//    }
+//  }
   
- int indiceT=0;
+//  int indiceT=0;
 
-  //VERTICAL
-   for(int k=0; k<cols;k++){ 
- for(int i=0; i<rows/p ;i++){ //arreglo s
-   offset=(p*i)*cols +k; 
-   h_erohgw[offset + (p -1)*cols] = h_window_hgw[offset + (p -1)*cols]; // agregar primer dato
-   w[c]=h_window_hgw[offset + (p -1)*cols];
-   //printf("s=%u ",h_erohgw[offset+ (p-1)*cols]);
-   //printf("offset= %i",offset);
+//   //VERTICAL
+//    for(int k=0; k<cols;k++){ 
+//  for(int i=0; i<rows/p ;i++){ //arreglo s
+//    offset=(p*i)*cols +k; 
+//    h_erohgw[offset + (p -1)*cols] = h_window_hgw[offset + (p -1)*cols]; // agregar primer dato
+//    w[c]=h_window_hgw[offset + (p -1)*cols];
+//    //printf("s=%u ",h_erohgw[offset+ (p-1)*cols]);
+//    //printf("offset= %i",offset);
    
-   for(int j=offset + (p -2)*cols; j>=offset; j=j-cols){
-       h_erohgw[j]=min(h_window_hgw[j], h_erohgw[j+cols]);
-       c++;
-       w[c]= h_window_hgw[j];
-       //  printf("s=%u ",h_erohgw[j]);
-     }
+//    for(int j=offset + (p -2)*cols; j>=offset; j=j-cols){
+//        h_erohgw[j]=min(h_window_hgw[j], h_erohgw[j+cols]);
+//        c++;
+//        w[c]= h_window_hgw[j];
+//        //  printf("s=%u ",h_erohgw[j]);
+//      }
 
-h_dilhgw[offset] = h_window_hgw[offset] ;// agregar primer dato
-// printf("r=%u ",h_dilhgw[offset]);
-   for(int j=offset + cols; j<=(offset + (p-1)*cols); j=j+cols){
+// h_dilhgw[offset] = h_window_hgw[offset] ;// agregar primer dato
+// // printf("r=%u ",h_dilhgw[offset]);
+//    for(int j=offset + cols; j<=(offset + (p-1)*cols); j=j+cols){
      
-       h_dilhgw[j]=min(h_window_hgw[j], h_dilhgw[j-cols]);
-       c++;
-       w[c]=h_window_hgw[j];
-       //     printf("r=%u ",h_dilhgw[j]);
+//        h_dilhgw[j]=min(h_window_hgw[j], h_dilhgw[j-cols]);
+//        c++;
+//        w[c]=h_window_hgw[j];
+//        //     printf("r=%u ",h_dilhgw[j]);
        
-    }
+//     }
 
-   // printf("\n");
-     for(int i=0; i<= 2*(p-1); i++){
-       // printf("w=%u ",w[i]); 
-     }
+//    // printf("\n");
+//      for(int i=0; i<= 2*(p-1); i++){
+//        // printf("w=%u ",w[i]); 
+//      }
      
-     c=0;
-     // printf("\n");
-     // printf("k= %i",k);
-     // printf("\n");
+//      c=0;
+//      // printf("\n");
+//      // printf("k= %i",k);
+//      // printf("\n");
      
      
- }
- }
+//  }
+//  }
 
    
 
-   for(int x=0; x<cols;x++){
-   for(int y=0; y<rows;y++){
+//    for(int x=0; x<cols;x++){
+//    for(int y=0; y<rows;y++){
      
-     indiceT=y*cols+x;
-     h_window_hgw[indiceT]=min(h_erohgw[indiceT],h_dilhgw[indiceT]); //result
+//      indiceT=y*cols+x;
+//      h_window_hgw[indiceT]=min(h_erohgw[indiceT],h_dilhgw[indiceT]); //result
      
-   }
- }
+//    }
+//  }
 
 
   
@@ -429,22 +435,23 @@ h_dilhgw[offset] = h_window_hgw[offset] ;// agregar primer dato
 
   cv::Mat img = cv::Mat(numRows(),numCols(),CV_8UC3,(void*)h_hsvImage);         //HSV Image
   cv::Mat imgTH = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_thresImage);
-  cv::Mat imgEro = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_window_hgw);
-  cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_dilatedImage);  //Dilated Image
+  // cv::Mat imgEro = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_window_hgw);
+  cv::Mat imgDil = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_dilhgw);  //Dilated Image
+  cv::Mat imgEro = cv::Mat(numRows(),numCols(),CV_8UC1,(void*)h_erohgw); 
  //cv::Mat imgRGBA ;
  // cv::cvtColor(img, imgRGBA, CV_BGR2RGBA);
 
  // imshow(window_hsv, img);
      imshow(window_thres, imgTH);
   imshow(window_ero_p, imgEro);
-  // 	 imshow(window_dil_p, imgDil);
+   	 imshow(window_dil_p, imgDil);
 
   cleanup();    //procesar.cpp
 
   //Mostrar imagenes procesadas por OpenCV
   // imshow(window_detection_name, frame_threshold);
-  //  imshow(window_dil, frame_dilated);
-    	imshow(window_ero, frame_eroded);
+    imshow(window_dil, frame_dilated);
+  //    	imshow(window_ero, frame_eroded);
 
 
 
