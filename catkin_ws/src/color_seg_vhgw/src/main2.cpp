@@ -94,8 +94,8 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
     std::string output_file;
 
 	//set video res
-     cap.set(CV_CAP_PROP_FRAME_WIDTH,320);   // max:1280 ||  min:320   || def:640
-     cap.set(CV_CAP_PROP_FRAME_HEIGHT,180);   // max:720  ||  min: 180  || def:480
+    cap.set(CV_CAP_PROP_FRAME_WIDTH,640);   // max:1280 ||  min:320   || def:640
+     cap.set(CV_CAP_PROP_FRAME_HEIGHT,480);   // max:720  ||  min: 180  || def:480
       while (true) {
 
 
@@ -122,7 +122,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
 	//kernel elíptico para hacer la erosión
 	Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(5,5), Point(2,2));
-	Mat kernel2 = getStructuringElement(MORPH_RECT, Size(3,3));
+	Mat kernel2 = getStructuringElement(MORPH_RECT, Size(7,7));
 	//erosionar con opencv
        	erode(frame_threshold, frame_eroded, kernel2);
 
@@ -176,12 +176,8 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 
  //HGW--------------------------------
 
- int cols = numCols();   //  320
- int rows = numRows();  //180
- int offset=0;
- int p=3;
- int c=0;
 
+ 
  // //HORIZONTAL
 //  for(int k=0; k<rows;k++){ 
 //  for(int i=0; i<cols/p ;i++){ //arreglo s
@@ -216,7 +212,7 @@ VideoCapture cap(argc > 1 ? atoi(argv[1]) : 0);
 //      //printf("\n");
 //      //printf("k= %i",k);
 //      // printf("\n");
-     
+       
      
 //  }
 //  }

@@ -241,13 +241,14 @@ __global__ void ero_hgw_kernel_hor(unsigned char * thresImage,
 
 
 int offset =0;
-int p=9;
+int p=7;
 unsigned char w[10]={0} ;
 int c=0;
 int x = blockIdx.x * blockDim.x +  threadIdx.x;
 int y = blockIdx.y *blockDim.y + threadIdx.y;
 
-if( y >= cols || x>= rows){
+//printf("y= %i\t", y);
+if( y >= cols/p || x>= rows){
     return;}
 
 int index = cols*x +y; 
@@ -255,39 +256,40 @@ int index = cols*x +y;
 //HORIZONTAL
 
 
- for(int i=0; i<cols/p ;i++){ //arreglo s
+ //arreglo s
  
-   offset= p*i + (p/2 + 1) + x*cols;
+   offset= p*y  + x*cols;
    
    suffix[offset + p -1] = thresImage[offset +p -1]; // agregar primer dato
-   w[c]=thresImage[offset +p -1];
+   //w[c]=thresImage[offset +p -1];
    //printf("s=%u ",h_erohgw[offset+p-1]);
      for(int j=offset + p -2; j>=offset; j--){
        suffix[j]=min(thresImage[j], suffix[j+1]);
-       c++;
-       w[c]= thresImage[j];
-       //  printf("s=%u ",h_erohgw[j]);
+       //c++;
+       //w[c]= thresImage[j];
+         //printf("s=%u ",suffix[j]);
      }
 
-prefix[offset] = thresImage[offset] ;// agregar primer dato
-//printf("r=%u ",h_dilhgw[offset]);
-   for(int j=offset + 1; j<=(offset + (p-1)); j++){
+     prefix[offset] = thresImage[offset] ;// agregar primer dato
+     //printf("r=%u ",h_dilhgw[offset]);
+     for(int j=offset + 1; j<=(offset + (p-1)); j++){
      
        prefix[j]=min(thresImage[j], prefix[j-1]);
-       c++;
-       w[c]=thresImage[j];
-       //     printf("r=%u ",h_dilhgw[j]);
+      // c++;
+       //w[c]=thresImage[j];
+       // printf("r=%u ",prefix[j]);
        
     }
-
+    
    // printf("\n");
-     for(int i=0; i<= 2*(p-1); i++){
-       //	 printf("w=%u ",w[i]); 
-     }
+   // printf("y= %i\t", y);
+     // for(int i=0; i<= 2*(p-1); i++){
+     //   printf("w=%u ",w[i]); 
+     // }
 
-     c=0;
+     //c=0;
 
- }
+ 
 }
 
 
@@ -298,17 +300,17 @@ __global__ void ero_hgw_kernel_ver(unsigned char * thresImage,
 
 
 int offset =0;
-int p=9;
+int p=7;
 int x = blockIdx.x * blockDim.x +  threadIdx.x;
 int y = blockIdx.y *blockDim.y + threadIdx.y;
- if( x>= cols){
+ if( x>= cols || y>=rows/p){
       return;}
 
 //printf("x=%i\t",x);
 //   //VERTICAL
-//for(int k=0; k<cols;k++){ 
-  for(int i=0; i<rows/p ;i++){ //arreglo s
-   offset=(p*i)*cols + x; 
+ //arreglo s
+ 
+   offset=(p*y)*cols + x; 
    suffix[offset + (p -1)*cols] = thresImage[offset + (p -1)*cols]; // agregar primer dato
    
    for(int j=offset + (p -2)*cols; j>=offset; j=j-cols){
@@ -322,8 +324,7 @@ int y = blockIdx.y *blockDim.y + threadIdx.y;
        
     }
 
-  }
-//}
+ 
 }
 /////////////////////////////////////////////////////EROSIÓN/////////////////////////////////////
 
@@ -332,60 +333,40 @@ int y = blockIdx.y *blockDim.y + threadIdx.y;
 /////DILATACIÓN///////////////////////////////////////////////////////////////////////////////
 
 
-__global__ void dil_hgw_kernel_hor(unsigned char * thresImage,
+__global__ void dil_hgw_kernel_hor(unsigned char * erohgw,
  	     	  	    	  unsigned char* suffix, 
 				  unsigned char * prefix,
  				  int rows, int cols){
 
 
 int offset =0;
-int p=9;
-unsigned char w[10]={0} ;
-int c=0;
+int p=7;
+
 int x = blockIdx.x * blockDim.x +  threadIdx.x;
 int y = blockIdx.y *blockDim.y + threadIdx.y;
 
-if( y >= cols || x>= rows){
+if( y >= cols/p || x>= rows){
     return;}
-
-int index = cols*x +y; 
 
 ///////HORIZONTAL////////
 
-
- for(int i=0; i<cols/p ;i++){ //arreglo s
+ //arreglo s
  
-   offset= p*i + (p/2 + 1) + x*cols;
+   offset= p*y  + x*cols;
    
-   suffix[offset + p -1] = thresImage[offset +p -1]; // agregar primer dato
-   w[c]=thresImage[offset +p -1];
-   //printf("s=%u ",h_erohgw[offset+p-1]);
+   suffix[offset + p -1] = erohgw[offset +p -1]; // agregar primer dato
      for(int j=offset + p -2; j>=offset; j--){
-       suffix[j]=max(thresImage[j], suffix[j+1]);
-       c++;
-       w[c]= thresImage[j];
-       //  printf("s=%u ",h_erohgw[j]);
+       suffix[j]=max(erohgw[j], suffix[j+1]);
      }
 
-prefix[offset] = thresImage[offset] ;// agregar primer dato
-//printf("r=%u ",h_dilhgw[offset]);
-   for(int j=offset + 1; j<=(offset + (p-1)); j++){
-     
-       prefix[j]=max(thresImage[j], prefix[j-1]);
-       c++;
-       w[c]=thresImage[j];
-       //     printf("r=%u ",h_dilhgw[j]);
-       
+     prefix[offset] = erohgw[offset] ;// agregar primer dato
+
+   for(int j=offset + 1; j<=(offset + (p-1)); j++){    
+       prefix[j]=max(erohgw[j], prefix[j-1]);   
     }
 
-   // printf("\n");
-     for(int i=0; i<= 2*(p-1); i++){
-       //	 printf("w=%u ",w[i]); 
-     }
 
-     c=0;
-
- }
+ 
 }
 
 
@@ -396,17 +377,16 @@ __global__ void dil_hgw_kernel_ver(unsigned char * thresImage,
 
 
 int offset =0;
-int p=9;
+int p=7;
 int x = blockIdx.x * blockDim.x +  threadIdx.x;
 int y = blockIdx.y *blockDim.y + threadIdx.y;
- if( x>= cols){
+ if( x>= cols || y>=rows/p){
       return;}
 
 //printf("x=%i\t",x);
 //   //VERTICAL
-//for(int k=0; k<cols;k++){ 
-  for(int i=0; i<rows/p ;i++){ //arreglo s
-   offset=(p*i)*cols + x; 
+ //arreglo s
+   offset=(p*y)*cols + x; 
    suffix[offset + (p -1)*cols] = thresImage[offset + (p -1)*cols]; // agregar primer dato
    
    for(int j=offset + (p -2)*cols; j>=offset; j=j-cols){
@@ -420,8 +400,7 @@ int y = blockIdx.y *blockDim.y + threadIdx.y;
        
     }
 
-  }
-//}
+
 }
 
 ///////////////////////////////////////////////////////DILATACIÓN//////////////////////////
@@ -434,7 +413,8 @@ int y = blockIdx.y *blockDim.y + threadIdx.y;
 
 if( y >= cols || x>= rows){
     return;}
-
+    
+//printf("y= %i\t", y);
 int index = cols*x +y; 
      erohgw[index]=min(suffix[index],prefix[index]); //result 
 }
@@ -463,13 +443,13 @@ void color_seg(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
 {
 
 
-  
+  int p=5;
   int   blockWidth = 8;   // (dimensionX / gridbloqueenX) = threadsporbloqueenX
 
-    const dim3 blockSize(blockWidth, blockWidth, 1);
+   const dim3 blockSize(blockWidth, blockWidth, 1);
    int   blocksX = (numRows/blockWidth)+1;       // +1 por truncamiento
-   int   blocksY = numCols/blockWidth +1; 
-   const dim3 gridSize( blocksX, blocksY, 1);  
+   int   blocksY = (numCols/blockWidth) +1 ; 
+   const dim3 gridSize( blocksX, blocksY , 1);  
   
 
 ///////////////
@@ -480,16 +460,17 @@ void color_seg(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
 
  // cudaDeviceSynchronize();
 
-ero_hgw_kernel_hor<<<numRows,1,1>>>(d_thresImage, d_suffix, d_prefix,  numRows, numCols);
+ero_hgw_kernel_hor<<<gridSize,blockSize,1>>>(d_thresImage, d_suffix, d_prefix,  numRows, numCols);
 ero_result_kernel<<<gridSize, blockSize,1>>>(d_suffix, d_prefix, d_erohgw, numRows, numCols);
-// ero_hgw_kernel_ver<<<numCols,1,1>>>(d_erohgw, d_suffix, d_prefix,  numRows, numCols);
-// ero_result_kernel<<<gridSize, blockSize,1>>>(d_suffix, d_prefix, d_erohgw, numRows, numCols);
+ero_hgw_kernel_ver<<<gridSize,blockSize,1>>>(d_erohgw, d_suffix, d_prefix,  numRows, numCols);
+ero_result_kernel<<<gridSize, blockSize,1>>>(d_suffix, d_prefix, d_erohgw, numRows, numCols);
+
 cudaDeviceSynchronize();
 
-dil_hgw_kernel_hor<<<numRows,1,1>>>(d_erohgw, d_suffix, d_prefix,  numRows, numCols);
+dil_hgw_kernel_hor<<<gridSize, blockSize,1>>>(d_erohgw, d_suffix, d_prefix,  numRows, numCols);
 dil_result_kernel<<<gridSize, blockSize,1>>>(d_suffix, d_prefix, d_dilhgw, numRows, numCols);
-// dil_hgw_kernel_ver<<<numCols,1,1>>>(d_dilhgw, d_suffix, d_prefix,  numRows, numCols);
-// dil_result_kernel<<<gridSize, blockSize,1>>>(d_suffix, d_prefix, d_dilhgw, numRows, numCols);
+dil_hgw_kernel_ver<<<gridSize, blockSize,1>>>(d_dilhgw, d_suffix, d_prefix,  numRows, numCols);
+dil_result_kernel<<<gridSize, blockSize,1>>>(d_suffix, d_prefix, d_dilhgw, numRows, numCols);
 
 
 
